@@ -9,9 +9,10 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV CMAKE_VERSION=3.25.1
 ENV GCC_VERSION=11
 
-# 更换为国内镜像源以提高下载速度
-RUN sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
-    sed -i 's/security.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list
+# 使用官方源（通常更稳定）
+# 如果下载慢，可以尝试使用清华源：
+ RUN sed -i 's/archive.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list && \
+     sed -i 's/security.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
 
 # 安装构建依赖
 RUN apt-get update && apt-get install -y \
@@ -75,11 +76,10 @@ RUN mkdir -p /app/logs && chown -R netbox:netbox /app
 USER netbox
 
 # 暴露端口（根据配置文件中的端口）
-EXPOSE 6379 8888
+EXPOSE 6379 8888 8001
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD ps aux | grep NetBox || exit 1
-
 # 启动命令
-CMD ["./NetBox", "config/config-docker.yaml"] 
+CMD ["./NetBox", "config/config-docker.yaml"]

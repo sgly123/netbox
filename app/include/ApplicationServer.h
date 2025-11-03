@@ -8,6 +8,7 @@
 #include <functional>
 #include <vector>
 #include <string>
+#include <unordered_map>
 
 /**
  * @brief 应用层基础服务器类
@@ -27,6 +28,14 @@ protected:
     IThreadPool* m_pool;
     int m_currentClientFd = 0;  // 当前处理的客户端FD
 
+    // 为每个客户端维护一个协议实例
+    std::unordered_map<int, std::shared_ptr<ProtocolBase>> m_clientProtocols;
+    std::mutex m_clientProtocolsMutex;  // 保护 m_clientProtocols 的互斥锁
+    
+    // 为每个客户端的发送操作加锁（防止帧交错）
+    std::unordered_map<int, std::shared_ptr<std::mutex>> m_clientSendMutexes;
+    std::mutex m_sendMutexesMapMutex;  // 保护 m_clientSendMutexes 的互斥锁
+
     // 协议路由器初始化（由子类实现）
     virtual void initializeProtocolRouter() = 0;
 
@@ -45,4 +54,8 @@ protected:
 
     // 协议回调
     void onProtocolPacket(uint32_t protoId, const std::vector<char>& packet);
+    virtual void onProtocolPacketForClient(int clientFd, uint32_t protoId, const std::vector<char>& packet);
+    
+    // 关闭客户端连接
+    void closeClientConnection(int clientFd);
 }; 

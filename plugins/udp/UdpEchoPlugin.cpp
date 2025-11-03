@@ -2,6 +2,9 @@
 #include "UdpEchoServer.h"
 #include "base/Logger.h"
 
+// 前向声明
+class EnhancedConfigReader;
+
 /**
  * @brief UDP Echo Server插件注册文件
  * 
@@ -61,18 +64,25 @@ protected:
 
     std::string handleHttpRequest(const std::string& request, int clientFd) override {
         // UDP Echo服务器不处理HTTP请求
+        (void)request;  // 避免未使用参数警告
+        (void)clientFd; // 避免未使用参数警告
         Logger::warn("UDP Echo Server不支持HTTP请求");
         return "";
     }
 
     std::string handleBusinessLogic(const std::string& command, const std::vector<std::string>& args) override {
         // UDP Echo服务器的业务逻辑在UdpEchoServer中处理
+        (void)command;  // 避免未使用参数警告
+        (void)args;     // 避免未使用参数警告
         Logger::debug("UDP Echo Server业务逻辑由UdpEchoServer处理");
         return "";
     }
 
     bool parseRequestPath(const std::string& path, std::string& command, std::vector<std::string>& args) override {
         // UDP Echo服务器不需要解析HTTP路径
+        (void)path;     // 避免未使用参数警告
+        (void)command;  // 避免未使用参数警告
+        (void)args;     // 避免未使用参数警告
         return false;
     }
 
@@ -106,7 +116,8 @@ static bool registerUdpEchoServer() {
     Logger::info("正在注册UDP Echo Server插件...");
     
     bool success = ApplicationRegistry::getInstance().registerApplication("udp_echo", 
-        [](const std::string& ip, int port, IOMultiplexer::IOType io_type, IThreadPool* pool) {
+        [](const std::string& ip, int port, IOMultiplexer::IOType io_type, IThreadPool* pool, EnhancedConfigReader* config) {
+            (void)config;  // 避免未使用参数警告
             Logger::info("创建UDP Echo Server实例: " + ip + ":" + std::to_string(port));
             return std::make_unique<UdpEchoServerAdapter>(ip, port, io_type, pool);
         });
@@ -134,4 +145,4 @@ static bool g_udpEchoServerRegistered = registerUdpEchoServer();
  */
 std::string getUdpEchoServerPluginInfo() {
     return "UDP Echo Server Plugin v1.0 - 提供UDP回显服务功能，支持高性能无连接通信";
-} 
+}

@@ -1,0 +1,19 @@
+# NetBox 性能测试依赖
+
+# Redis客户端
+redis>=4.5.0
+
+# WebSocket客户端
+websockets>=11.0.0
+
+# 数据可视化
+matplotlib>=3.7.0
+numpy>=1.24.0
+
+# 统计分析
+scipy>=1.10.0
+
+# 可选：更好的图表
+seaborn>=0.12.0
+
+

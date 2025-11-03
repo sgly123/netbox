@@ -3,13 +3,13 @@
 
 # 应用配置
 application:
-  type: redis_app          # 应用类型: echo, redis_app
+  type: websocket          # 应用类型: echo, redis_app
   version: 1.0             # 应用版本
 
 # 网络配置 - Docker环境优化
 network:
   ip: 0.0.0.0             # 监听所有网络接口（Docker必需）
-  port: 6379              # Redis协议端口
+  port: 8000              # Redis协议端口
   io_type: epoll          # IO多路复用类型（Linux优化）
 
 # 线程配置 - 根据容器资源调整

@@ -22,7 +22,7 @@ static bool registerEchoServer() {
     Logger::info("正在注册EchoServer插件...");
     
     bool success = ApplicationRegistry::getInstance().registerApplication("echo", 
-        [](const std::string& ip, int port, IOMultiplexer::IOType io_type, IThreadPool* pool) {
+        [](const std::string& ip, int port, IOMultiplexer::IOType io_type, IThreadPool* pool, EnhancedConfigReader* config) {
             Logger::info("创建EchoServer实例: " + ip + ":" + std::to_string(port));
             return std::make_unique<EchoServer>(ip, port, io_type, pool);
         });

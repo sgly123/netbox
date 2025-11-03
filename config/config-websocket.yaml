@@ -1,0 +1,35 @@
+# NetBox WebSocket服务配置文件
+
+# 应用配置
+application:
+  type: websocket         # WebSocket应用类型
+  version: 1.0            # 应用版本
+
+# 网络配置
+network:
+  ip: 0.0.0.0             # 监听所有网络接口
+  port: 8001              # WebSocket服务端口
+  io_type: epoll          # IO多路复用类型
+
+# 线程配置
+threading:
+  worker_threads: 4       # 工作线程数量
+
+# 日志配置
+logging:
+  level: info             # 日志级别
+  file: /app/logs/websocket-server.log  # WebSocket服务日志文件
+  async: true             # 异步日志
+
+# 性能配置
+performance:
+  max_connections: 2000   # 最大连接数
+  buffer_size: 4096       # 缓冲区大小
+  heartbeat_interval: 30  # 心跳间隔
+
+# WebSocket服务特定配置
+websocket:
+  enable_ping: true       # 启用ping/pong心跳
+  ping_interval: 30       # ping间隔（秒）
+  max_frame_size: 65536   # 最大帧大小
+  enable_compression: false # 启用压缩

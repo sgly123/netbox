@@ -17,7 +17,7 @@ static bool registerDirectRedisServer() {
     Logger::info("正在注册DirectRedisServer插件...");
     
     bool success = ApplicationRegistry::getInstance().registerApplication("direct_redis", 
-        [](const std::string& ip, int port, IOMultiplexer::IOType io_type, IThreadPool* pool) {
+        [](const std::string& ip, int port, IOMultiplexer::IOType io_type, IThreadPool* pool, EnhancedConfigReader* config) {
             Logger::info("创建DirectRedisServer实例: " + ip + ":" + std::to_string(port));
             return std::make_unique<DirectRedisServer>(ip, port, io_type, pool);
         });

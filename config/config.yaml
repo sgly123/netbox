@@ -3,13 +3,13 @@
 
 # 应用配置
 application:
-  type: redis_app          # 应用类型: echo, sanguosha, redis_app
+  type: websocket       
   version: 1.0        # 应用版本
 
 # 网络配置
 network:
   ip: 192.168.88.135       # 监听IP地址
-  port: 6379          # 监听端口
+  port: 8000          # 监听端口
   io_type: epoll      # IO多路复用类型: select, poll, epoll
 
 # 线程配置
@@ -32,11 +32,12 @@ performance:
 echo:
   message_prefix: "Echo: "  # 回显消息前缀
 
-# 未来的三国杀配置
-sanguosha:
-  max_players_per_room: 8   # 每个房间最大玩家数
-  room_timeout: 1800        # 房间超时时间（秒）
-  enable_ai: true           # 是否启用AI玩家
+# WebSocket配置
+websocket:
+  enable_ping: true       # 是否启用ping/pong心跳
+  ping_interval: 30       # ping间隔（秒）
+  max_frame_size: 65536   # 最大帧大小（字节）
+  enable_compression: false  # 是否启用压缩
 
 # 未来的Mini Redis配置
 mini_redis:

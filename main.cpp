@@ -107,8 +107,8 @@ int main(int argc, char* argv[]) {
         Logger::info("  - " + app);
     }
 
-    // 创建应用实例
-    auto server = registry.createApplication(app_type, ip, port, io_type, pool);
+    // 创建应用实例，传入配置
+    auto server = registry.createApplication(app_type, ip, port, io_type, pool, &config);
 
     // 检查应用是否创建成功
     if (!server) {

@@ -45,7 +45,7 @@ services:
     container_name: netbox-redis-server
     restart: unless-stopped
     ports:
-      - "6379:6379"  # Redis协议端口
+      - "6380:6379"  # Redis协议端口
     volumes:
       # 生产模式：只挂载配置和日志
       - ./config:/app/config:ro  # 配置文件挂载（只读）
@@ -69,6 +69,38 @@ services:
       - production
       - ""  # 默认profile
 
+  # WebSocket服务器 - 生产模式
+  netbox-websocket:
+    build:
+      context: .
+      dockerfile: ${DOCKERFILE:-Dockerfile}
+    container_name: netbox-websocket-server
+    restart: unless-stopped
+    ports:
+      - "8001:8001"  # WebSocket服务器端口
+    volumes:
+      # 生产模式：只挂载配置和日志
+      - ./config:/app/config:ro  # 配置文件挂载（只读）
+      - ./logs:/app/logs         # 日志目录挂载
+      - ./data:/app/data         # 数据目录挂载
+      # 开发模式：额外挂载源码（通过环境变量控制）
+      - ${SOURCE_MOUNT:-/dev/null}:/workspace
+    environment:
+      - TZ=Asia/Shanghai
+      - NETBOX_MODE=${NETBOX_MODE:-production}
+    networks:
+      - netbox-network
+    command: ["./NetBox", "config/config-websocket.yaml"]
+    healthcheck:
+      test: ["CMD", "ps", "aux", "|", "grep", "NetBox"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    profiles:
+      - production
+      - ""  # 默认profile
+
   # 开发模式 - 统一开发容器
   netbox-dev:
     build:
@@ -79,6 +111,7 @@ services:
     ports:
       - "6379:6379"  # Redis协议端口
       - "8888:8888"  # Echo服务器端口
+      - "8001:8001"  # WebSocket服务器端口
       - "9999:9999"  # 调试端口
     volumes:
       # 开发模式：源码实时挂载
@@ -110,6 +143,7 @@ services:
         echo '🚀 启动命令:' &&
         echo '  Echo服务: ./build/bin/NetBox config/config-echo.yaml' &&
         echo '  Redis服务: ./build/bin/NetBox config/config-redis.yaml' &&
+        echo '  WebSocket服务: ./build/bin/NetBox config/config-websocket.yaml' &&
         echo '' &&
         echo '📝 容器保持运行，请手动进入容器操作:' &&
         echo '  docker exec -it netbox-dev-server bash' &&
@@ -130,11 +164,10 @@ networks:
   netbox-network:
     driver: bridge
     name: netbox-network
-
 volumes:
   netbox-logs:
     driver: local
   netbox-data:
     driver: local
   build-cache:
-    driver: local 
+    driver: local

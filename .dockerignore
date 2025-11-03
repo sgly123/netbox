@@ -36,11 +36,11 @@ FlameGraph/
 
 # 脚本和工具
 scripts/
-tools/
+# tools/ - 需要用于性能测试，不忽略
 *.sh
 *.bat
-*.ps1
-*.py
+# *.ps1 - 需要用于Windows测试，不忽略
+# *.py - 需要用于性能测试，不忽略
 
 # 日志文件
 logs/

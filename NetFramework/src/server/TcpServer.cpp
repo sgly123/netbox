@@ -143,7 +143,13 @@ void TcpServer::handleAccept() {
         m_lastActive[client_fd] = std::chrono::steady_clock::now();
     }
     m_io->addfd(client_fd, IOMultiplexer::EventType::READ);
+    
+    // 调用虚函数（子类可重写）
+    onClientConnected(client_fd);
+    
+    // 调用回调函数（兼容旧代码）
     if (m_onConnect) m_onConnect(client_fd);
+    
     char ip[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &client_addr.sin_addr, ip, sizeof(ip));
     Logger::info(std::string("[TcpServer] 客户端") + std::to_string(client_fd) + "连接成功（IP:" + ip + "）");

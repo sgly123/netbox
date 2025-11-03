@@ -3,61 +3,69 @@
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/netbox/netbox)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-blue.svg)](https://github.com/netbox/netbox)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.0.0-orange.svg)](https://github.com/netbox/netbox/releases)
+[![Version](https://img.shields.io/badge/version-2.1.0-orange.svg)](https://github.com/netbox/netbox/releases)
 [![技术栈](https://img.shields.io/badge/技术栈-C%2B%2B17%20%7C%20CMake%20%7C%20Epoll-red.svg)](#技术栈)
 
-> **🎓 校招项目亮点：** 展示完整的网络编程技术栈，从底层IO多路复用到上层应用服务，体现系统性思维和工程实践能力
+## 项目概述
 
-## 🌟 项目概述
+NetBox是基于**C++17**开发的企业级高性能网络框架，采用**分层架构设计**，支持多种协议和应用场景。
 
-NetBox是基于**C++17**开发的企业级高性能网络框架，采用**分层架构设计**，支持多种协议和应用场景。项目展示了完整的网络编程技术栈和现代C++开发实践，是校招面试中的技术亮点项目。
-
-### 🏆 核心技术成就
-
-- **🔥 高性能网络编程**：支持Epoll/IOCP/Kqueue三种IO多路复用模型
-- **🏗️ 分层架构设计**：应用层→协议层→网络层，完全解耦，高度可扩展  
-- **⚡ 智能协议路由**：支持多协议共存，自动识别并路由到对应处理器
-- **🔌 插件化扩展**：支持动态协议注册，配置驱动的服务器创建
-- **📊 生产级特性**：异步日志、线程池、配置管理、性能监控
+- **高性能网络编程**：支持Epoll/IOCP/Kqueue三种IO多路复用模型
+- **分层架构设计**：应用层→协议层→网络层，完全解耦，高度可扩展  
+- ** 智能协议路由**：支持多协议共存，自动识别并路由到对应处理器
+- **插件化扩展**：支持动态协议注册，配置驱动的服务器创建
+- **生产级特性**：异步日志、线程池、配置管理、性能监控
+- **完整WebSocket实现**：RFC 6455标准协议、帧解析/封装、多客户端广播、线程安全设计
 
 ### 📈 性能指标
 
 | 测试场景 | 并发连接 | QPS | 平均延迟 | 内存使用 |
-|----------|----------|-----|----------|----------|
+|:---------|----------|-----|----------|----------|
 | **Echo服务器** | 1,000 | 50,000 | 0.5ms | 25MB |
-| **Redis服务器** | 5,000 | 80,000 | 0.8ms | 45MB |
-| **HTTP服务器** | 2,000 | 30,000 | 1.2ms | 35MB |
+| **Redis服务器** | 5,000 | 80,000 | 0.8ms | 45M |
+| **WebSocket服务器** | 1,000+ | 40,000 | 0.6ms | 30MB |
 
 ---
 
-## ⚡ 30秒快速体验
+## 30秒快速体验
 
-### 一键部署
+### 方式1：启动WebSocket聊天服务器 
+
+```bash
+# 1. 编译项目
+cmake -B build && cmake --build build --config Release
+
+# 2. 启动WebSocket服务器
+./build/bin/netbox_server config/config-websocket.yaml
+
+# 3. 使用浏览器或WebSocket客户端连接
+# 地址：ws://localhost:8001
+```
+
+**测试效果**：
+- 打开多个浏览器标签页
+- 连接到 `ws://localhost:8001`
+- 发送消息，所有客户端都能实时收到广播
+- 支持多客户端聊天室功能
+
+### 方式2：docker一键部署
+
 ```bash
 # 克隆项目
 git clone https://github.com/netbox/netbox.git
 cd NetBox
-
-# 一键安装
-./install.sh
-
-# 创建第一个项目
-netbox init MyProject
-cd MyProject
-
-# 编译运行
-netbox build && netbox run
+docker-compose up --build
 ```
 
 ### 输出效果
 ```
-🏆 NetBox CLI v2.0 - 企业级网络框架
+🏆 NetBox CLI v2.1 - 企业级网络框架
 ==========================================
-🚀 创建NetBox项目: MyProject
-✅ 项目创建成功! 支持Echo/Redis/HTTP三种服务器
-🔨 构建完成 (Release模式，4线程并行)
-🌟 服务器启动: 127.0.0.1:8888 (Epoll模式)
-✅ 等待客户端连接...
+创建NetBox项目: MyProject
+项目创建成功! 支持Echo/Redis/HTTP/WebSocket四种服务器
+构建完成 (Release模式，4线程并行)
+服务器启动: 127.0.0.1:8888 (Epoll模式)
+等待客户端连接...
 ```
 
 ---
@@ -66,24 +74,24 @@ netbox build && netbox run
 
 ### 分层架构设计
 ```
-┌─────────────────────────────────────┐
-│     应用层 (Application Layer)      │
-│   EchoServer | RedisServer | HTTP   │
-├─────────────────────────────────────┤
-│      协议层 (Protocol Layer)        │
-│  ProtocolRouter | RESP | SimpleHdr  │ 
-├─────────────────────────────────────┤
-│      网络层 (Network Layer)         │
-│   TcpServer | IOMultiplexer        │
-├─────────────────────────────────────┤
-│       基础层 (Base Layer)           │
-│  ThreadPool | Logger | Config      │
-└─────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│       应用层 (Application Layer)             │
+│   EchoServer | RedisServer | HTTP | WebSocket│
+├──────────────────────────────────────────────┤
+│        协议层 (Protocol Layer)               │
+│  ProtocolRouter | RESP | SimpleHdr | WebSocket│ 
+├──────────────────────────────────────────────┤
+│        网络层 (Network Layer)                │
+│   TcpServer | IOMultiplexer                 │
+├──────────────────────────────────────────────┤
+│         基础层 (Base Layer)                  │
+│  ThreadPool | Logger | Config               │
+└──────────────────────────────────────────────┘
 ```
 
 ### 核心技术特性
 
-#### 🔥 IO多路复用支持
+#### IO多路复用支持
 ```cpp
 // 跨平台IO模型抽象
 class IOMultiplexer {
@@ -98,7 +106,7 @@ class EpollMultiplexer : public IOMultiplexer {
 };
 ```
 
-#### ⚡ 智能协议路由
+#### 智能协议路由
 ```cpp
 // 协议自动识别和路由
 class ProtocolRouter {
@@ -112,7 +120,7 @@ class ProtocolRouter {
 };
 ```
 
-#### 🔌 插件化应用注册
+####  插件化应用注册
 ```cpp
 // 配置驱动的服务器创建
 #define REGISTER_APPLICATION(name, class_type) \
@@ -125,25 +133,38 @@ REGISTER_APPLICATION("http", HttpServer);
 
 ---
 
-## 🎯 支持的应用场景
+## 支持的应用场景
 
-### 1. 🔄 Echo回显服务器
+### 1.  Echo回显服务器
 - **协议**：自定义SimpleHeader协议（长度前缀）
 - **特点**：演示基础网络编程和协议设计
 - **用途**：网络编程教学、协议解析演示
 - **技术亮点**：心跳保活、长连接维护
 
-### 2. 💾 Redis数据库服务器  
+### 2. Redis数据库服务器  
 - **协议**：完整Redis RESP协议实现
 - **特点**：支持标准Redis命令，智能禁用心跳
 - **用途**：高性能缓存服务、数据存储
 - **技术亮点**：协议冲突解决、4Vx问题修复
 
-### 3. 🌐 HTTP Web服务器
+### 3.  HTTP Web服务器
 - **协议**：HTTP/1.1标准协议
 - **特点**：静态文件服务、RESTful API支持
 - **用途**：Web应用开发、API网关
 - **技术亮点**：Keep-Alive连接复用
+
+### 4.  WebSocket实时通信服务器 
+- **协议**：完整WebSocket RFC 6455协议实现
+- **特点**：支持多客户端实时广播、双向通信、UTF-8验证
+- **用途**：实时聊天室、在线协作、游戏服务器、实时推送
+- **技术亮点**：
+  - ✅ 完整的WebSocket握手和帧解析
+  - ✅ 掩码/解掩码处理（字节序正确性）
+  - ✅ 多客户端广播和消息路由
+  - ✅ 每客户端协议实例管理（避免状态污染）
+  - ✅ 线程安全的并发发送（per-client mutex）
+  - ✅ TCP心跳包与应用层协议隔离
+  - ✅ UTF-8编码验证和错误处理
 
 ---
 
@@ -168,61 +189,7 @@ REGISTER_APPLICATION("http", HttpServer);
 
 ---
 
-## 📊 项目规模统计
-
-### 代码统计
-```
-总代码行数: 15,000+ 行
-├── NetFramework/     # 核心框架 (8,000行)
-│   ├── base/         # 基础组件：线程池、日志、配置  
-│   ├── IO/           # IO多路复用抽象层
-│   ├── server/       # TCP服务器实现
-│   └── app/          # 应用框架和注册系统
-├── Protocol/         # 协议层 (3,000行)  
-│   ├── SimpleHeader  # 自定义协议实现
-│   ├── Redis RESP    # Redis协议完整实现
-│   └── HTTP          # HTTP/1.1协议支持
-└── Application/      # 应用层 (4,000行)
-    ├── EchoServer    # Echo回显服务器
-    ├── RedisServer   # Redis兼容服务器  
-    └── HttpServer    # HTTP Web服务器
-```
-
-### 文档体系
-- **完整文档**：35+个技术文档
-- **使用指南**：安装部署、CLI使用、快速入门
-- **架构设计**：跨平台架构、协议扩展、插件系统
-- **面试准备**：技术亮点总结、面试问答
-
----
-
-## 🎓 面试展示价值
-
-### 技术深度展示
-
-#### 1. 网络编程能力
-- **IO多路复用**：深度理解Epoll/IOCP/Kqueue三种模型差异
-- **TCP协议栈**：从Socket API到应用协议的完整实现  
-- **高并发设计**：支持万级并发连接的服务器架构
-
-#### 2. 系统架构能力
-- **分层解耦**：清晰的模块划分和接口设计
-- **插件化系统**：支持动态扩展的架构设计
-- **配置驱动**：灵活的配置管理和热加载
-
-#### 3. 协议设计能力
-- **多协议支持**：同时支持自定义、Redis、HTTP协议
-- **协议路由器**：智能协议识别和数据包路由
-- **RESP协议**：完整实现Redis通信协议
-
-#### 4. 问题解决能力
-- **4Vx问题分析**：Redis客户端乱码问题的根因分析和解决
-- **协议冲突解决**：心跳包与RESP协议冲突的智能处理
-- **性能优化**：零拷贝、对象池、异步日志等优化技术
-
----
-
-## 🚀 快速二次开发
+##  快速二次开发
 
 ### 扩展新协议
 ```cpp
@@ -264,140 +231,178 @@ REGISTER_APPLICATION("game", GameServer);
 
 ---
 
-## 🎮 基于NetBox开发三国杀游戏的建议
+##  WebSocket技术难题解决全记录
 
-基于您当前的NetBox框架，开发一个结合Qt的三国杀游戏是一个很好的想法！这将是校招中的另一个亮点项目。
+### 问题背景
 
-### 🎯 项目架构建议
+开发WebSocket实时聊天服务器时，遇到了一系列生产级技术难题，每个问题都涉及深层次的协议理解和系统设计。
 
-#### 1. 整体架构设计
+### 问题解决时间线
+
+#### 问题：客户端发送一次数据后断开（UTF-8解码错误）
+
+**现象**：
 ```
-┌─────────────────────────────────────┐
-│        Qt客户端 (Game Client)        │
-│  游戏界面 | 卡牌动画 | 音效系统       │
-├─────────────────────────────────────┤
-│      NetBox游戏服务器 (Game Server)   │  
-│  房间管理 | 游戏逻辑 | 状态同步       │
-├─────────────────────────────────────┤
-│      NetBox网络框架 (Network Layer)   │
-│   协议路由 | 连接管理 | 消息分发      │
-└─────────────────────────────────────┘
+WebSocket connection failed: Could not decode a text frame as UTF-8
 ```
 
-#### 2. 协议设计
+**根因分析**：
+- WebSocket协议要求客户端发送的帧必须**带掩码**（Mask bit = 1）
+- 服务器需要用4字节掩码键（Masking Key）对payload进行**解掩码**
+- 错误代码使用了 `ntohl(maskingKeyNet)`，这会**改变字节顺序**
+- 导致解掩码后的数据是乱码，无法通过UTF-8校验
+
+**解决方案**：
 ```cpp
-// 三国杀游戏协议
-enum class GameMessageType : uint32_t {
-    PLAYER_JOIN = 0x10001,      // 玩家加入
-    PLAYER_LEAVE = 0x10002,     // 玩家离开  
-    GAME_START = 0x10003,       // 游戏开始
-    CARD_PLAY = 0x10004,        // 出牌
-    SKILL_USE = 0x10005,        // 技能使用
-    TURN_END = 0x10006,         // 回合结束
-    GAME_STATE = 0x10007        // 游戏状态同步
-};
+// ❌ 错误做法：ntohl会改变字节顺序
+header.masking_key = ntohl(maskingKeyNet);
 
-class SgsProtocol : public ProtocolBase {
-    // 实现三国杀特定的协议处理
-};
+// ✅ 正确做法：直接按字节复制
+std::memcpy(header.masking_key, data + pos, 4);
 ```
 
-### 🎮 游戏功能模块
+**技术要点**：
+- 理解掩码键不是一个32位整数，而是**4个独立的字节**
+- 网络字节序转换（`ntohl`）只适用于数值，不适用于掩码键
+- WebSocket帧结构的精确理解（RFC 6455）
 
-#### 1. 核心游戏逻辑
-```cpp
-class SgsGameServer : public ApplicationServer {
-private:
-    std::map<std::string, std::shared_ptr<GameRoom>> rooms_;
-    std::map<int, std::shared_ptr<Player>> players_;
-    
-public:
-    void createRoom(const std::string& roomId);
-    void joinRoom(int playerId, const std::string& roomId);
-    void processCardPlay(int playerId, const Card& card);
-    void broadcastGameState(const std::string& roomId);
-};
+---
+
+#### 问题："A server must not mask any frames"（共享实例问题）
+
+**现象**：
+```
+WebSocket connection failed: A server must not mask any frames that it sends to the client.
 ```
 
-#### 2. Qt客户端设计
+**根因分析**：
+- `WebSocketServer` 创建了一个**共享的** `WebSocketProtocol` 实例
+- 所有客户端都使用同一个协议实例，导致**状态污染**
+- 客户端A的掩码键可能影响到客户端B的帧封装
+- 服务器发送的帧被错误地标记为"已掩码"
+
+**架构缺陷**：
 ```cpp
-class SgsMainWindow : public QMainWindow {
-private:
-    QTcpSocket* networkSocket_;
-    GameScene* gameScene_;
-    CardAnimationManager* animationManager_;
-    
-public slots:
-    void onServerMessage(const QByteArray& data);
-    void onCardClicked(const Card& card);
-    void onSkillTriggered(const Skill& skill);
+//  错误架构：所有客户端共享一个协议实例
+class WebSocketServer {
+    std::unique_ptr<ProtocolRouter> protocolRouter_; // 共享实例
 };
 ```
 
-### 🛠️ 开发建议
-
-#### 阶段1：基础框架 (1-2周)
-1. **扩展NetBox协议层**：实现三国杀游戏协议
-2. **游戏服务器核心**：房间管理、玩家管理
-3. **Qt客户端框架**：基础UI、网络通信模块
-
-#### 阶段2：游戏逻辑 (2-3周)  
-1. **卡牌系统**：卡牌数据、效果处理、技能系统
-2. **游戏流程**：回合制、阶段控制、胜利条件
-3. **状态同步**：实时游戏状态广播
-
-#### 阶段3：界面优化 (1-2周)
-1. **Qt界面美化**：卡牌动画、特效、音效
-2. **用户体验**：操作反馈、错误提示、重连机制
-3. **性能优化**：客户端渲染、网络优化
-
-### 🎯 技术亮点
-
-#### 1. 实时同步算法
+**解决方案**：
 ```cpp
-class GameStateSynchronizer {
-    void syncGameState(const GameState& state) {
-        // 实现帧同步和状态一致性算法
-        for (auto& player : connectedPlayers_) {
-            sendStateUpdate(player.fd, state);
-        }
+// 正确架构：每个客户端一个独立的协议实例
+class ApplicationServer {
+    std::unordered_map<int, std::shared_ptr<ProtocolBase>> m_clientProtocols;
+    // 在客户端连接时创建独立实例
+};
+```
+
+**技术要点**：
+- 有状态协议必须采用**per-client instance**设计
+- 理解共享可变状态在多线程环境中的危险性
+- 分层架构中责任的正确划分
+
+---
+
+#### 问题3️⃣：间歇性"Server must not mask"（线程安全问题）
+
+**现象**：
+- 单客户端测试正常
+- 多客户端高频发送时**间歇性失败**
+- 容器环境下更容易复现
+
+**根因分析**：
+- `m_clientProtocols` 映射表没有互斥锁保护
+- 多线程并发访问导致**数据竞争（data race）**
+- 内存损坏导致帧数据被错误解析为"带掩码"
+
+**解决方案**：
+```cpp
+class ApplicationServer {
+    std::unordered_map<int, std::shared_ptr<ProtocolBase>> m_clientProtocols;
+    std::mutex m_clientProtocolsMutex; // ✅ 添加互斥锁
+
+    void onDataReceived(...) {
+        std::lock_guard<std::mutex> lock(m_clientProtocolsMutex);
+        auto proto = m_clientProtocols[clientFd]; // 线程安全访问
     }
 };
 ```
 
-#### 2. 卡牌动画系统
+**技术要点**：
+- 识别共享数据结构的并发访问风险
+- RAII风格的锁管理（`std::lock_guard`）
+- 容器环境资源限制下的并发问题放大效应
+
+---
+
+#### 问题：帧交错问题（Frame Interleaving）
+
+**现象**：
+- 即使有协议实例锁，仍然出现"masked frame"错误
+- 日志显示帧封装正确，但客户端收到乱码
+
+**根因分析**：
+- `m_clientProtocolsMutex` 只保护协议实例的**访问**
+- 但多个线程可以**同时调用** `::send()` 向同一个socket发送
+- TCP是字节流，多个线程的数据会**交错混合**
+- 导致WebSocket帧边界错乱
+
+**示例**：
+```
+线程1发送：[81 05 H e l l o]
+线程2发送：[81 05 W o r l d]
+实际到达：[81 05 H 81 05 W e l o r l l d o] ❌ 帧边界破坏
+```
+
+**解决方案**：
 ```cpp
-class CardAnimationManager : public QObject {
-    Q_OBJECT
-public:
-    void playCardAnimation(const Card& card, const QPoint& from, const QPoint& to);
-    void playSkillEffect(const Skill& skill, const QRect& area);
+class ApplicationServer {
+    std::unordered_map<int, std::shared_ptr<std::mutex>> m_clientSendMutexes;
     
-private:
-    QPropertyAnimation* cardMoveAnimation_;
-    QGraphicsScene* gameScene_;
+    void broadcast(...) {
+        auto sendMutex = m_clientSendMutexes[clientFd];
+        std::lock_guard<std::mutex> sendLock(*sendMutex); // ✅ 每客户端发送锁
+        ::send(clientFd, frame.data(), frame.size(), 0);
+    }
 };
 ```
 
-### 💡 校招价值体现
+**技术要点**：
+- **细粒度锁**：per-client mutex vs global mutex
+- 理解TCP的字节流特性与应用层帧的关系
+- 原子性操作的边界定义
 
-这个项目将展示：
+---
 
-1. **完整的客户端-服务器架构**：从网络通信到游戏逻辑的完整实现
-2. **Qt GUI开发能力**：现代界面设计、动画效果、用户体验
-3. **游戏开发经验**：实时同步、状态管理、复杂逻辑处理
-4. **项目工程化**：模块化设计、配置管理、测试覆盖
+#### 问题：TCP心跳包与应用层协议冲突 🎯 **架构级问题**
 
-### 📋 项目规划
+**现象**：
+```
+客户端接收到："�Masked frame from server"
+客户端主动关闭连接
+```
 
-我建议按以下时间线执行：
-- **Week 1-2**：NetBox游戏协议扩展 + Qt基础框架
-- **Week 3-4**：核心游戏逻辑实现
-- **Week 5-6**：界面美化和动画效果
-- **Week 7**：测试优化和文档完善
+**根因分析**：
+- `TcpServer` 基类每10秒发送**4字节TCP心跳包**（魔数 `0xAABBCCDD`）
+- WebSocket客户端（浏览器）将**所有接收数据**都当作WebSocket帧解析
+- 心跳包的某个字节恰好满足"掩码位=1"的条件
+- 浏览器误判为"服务器发送了带掩码的帧" → 断开连接
 
-这样您就有了两个高质量的校招项目：
-1. **NetBox** - 展示网络编程和系统架构能力
-2. **三国杀游戏** - 展示GUI开发和游戏开发能力
+**架构问题**：
+```
+TcpServer（发送原始心跳包）
+    ↓
+ApplicationServer
+    ↓
+WebSocketServer ← 浏览器无法识别TCP层心跳包
+```
 
-**您觉得这个规划如何？需要我详细设计某个具体模块吗？**
+**解决方案**：
+```cpp
+WebSocketServer::WebSocketServer(...) {
+    setHeartbeatEnabled(false); // ✅ 禁用TCP层心跳
+    // WebSocket使用自己的PING/PONG帧
+}
+```

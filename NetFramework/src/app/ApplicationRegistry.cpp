@@ -30,7 +30,8 @@ std::unique_ptr<ApplicationServer> ApplicationRegistry::createApplication(
     const std::string& ip,
     int port,
     IOMultiplexer::IOType io_type,
-    IThreadPool* pool) {
+    IThreadPool* pool,
+    EnhancedConfigReader* config) {
     
     // 查找应用创建函数
     auto it = m_creators.find(name);
@@ -40,8 +41,8 @@ std::unique_ptr<ApplicationServer> ApplicationRegistry::createApplication(
     }
     
     try {
-        // 调用创建函数
-        auto app = it->second(ip, port, io_type, pool);
+        // 调用创建函数，传入配置参数
+        auto app = it->second(ip, port, io_type, pool, config);
         if (app) {
             Logger::info("应用创建成功: " + name + " (" + ip + ":" + std::to_string(port) + ")");
         } else {

@@ -3,12 +3,12 @@
 
 # 应用配置 (兼容现有解析逻辑)
 application:
-  type: redis_app        # 使用集成的Redis应用
+  type: websocket        # 使用集成的Redis应用
 
 # 网络配置
 network:
   ip: 192.168.88.135     # 监听IP地址
-  port: 6379             # Redis端口 (避免冲突)
+  port: 8000             # Redis端口 (避免冲突)
   io_type: epoll         # IO多路复用类型 (epoll/select/poll)
 
 # 线程配置

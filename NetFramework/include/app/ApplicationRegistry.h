@@ -9,6 +9,9 @@
 #include "base/IOMultiplexer.h"
 #include "base/IThreadPool.h"
 
+// 前向声明
+class EnhancedConfigReader;
+
 /**
  * @brief 应用注册表 - 插件化框架的核心组件
  * 
@@ -31,13 +34,15 @@ public:
      * @param port 监听端口
      * @param io_type IO多路复用类型
      * @param pool 线程池指针
+     * @param config 配置读取器指针（可选）
      * @return 应用服务器实例的智能指针
      */
     using CreateFunc = std::function<std::unique_ptr<ApplicationServer>(
         const std::string& ip, 
         int port, 
         IOMultiplexer::IOType io_type, 
-        IThreadPool* pool
+        IThreadPool* pool,
+        EnhancedConfigReader* config
     )>;
 
     /**
@@ -64,6 +69,7 @@ public:
      * @param port 监听端口
      * @param io_type IO多路复用类型
      * @param pool 线程池指针
+     * @param config 配置读取器指针（可选）
      * @return 应用服务器实例，失败时返回nullptr
      */
     std::unique_ptr<ApplicationServer> createApplication(
@@ -71,7 +77,8 @@ public:
         const std::string& ip,
         int port,
         IOMultiplexer::IOType io_type,
-        IThreadPool* pool
+        IThreadPool* pool,
+        EnhancedConfigReader* config = nullptr
     );
 
     /**
@@ -124,8 +131,8 @@ private:
 #define REGISTER_APPLICATION(name, class_name) \
     static bool register_##class_name() { \
         return ApplicationRegistry::getInstance().registerApplication(name, \
-            [](const std::string& ip, int port, IOMultiplexer::IOType io_type, IThreadPool* pool) { \
-                return std::make_unique<class_name>(ip, port, io_type, pool); \
+            [](const std::string& ip, int port, IOMultiplexer::IOType io_type, IThreadPool* pool, EnhancedConfigReader* config) { \
+                return std::make_unique<class_name>(ip, port, io_type, pool, config); \
             }); \
     } \
     static bool g_##class_name##_registered = register_##class_name();

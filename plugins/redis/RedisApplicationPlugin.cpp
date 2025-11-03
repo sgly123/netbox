@@ -17,7 +17,7 @@ static bool registerRedisApplicationServer() {
     Logger::info("正在注册RedisApplicationServer插件...");
     
     bool success = ApplicationRegistry::getInstance().registerApplication("redis_app", 
-        [](const std::string& ip, int port, IOMultiplexer::IOType io_type, IThreadPool* pool) {
+        [](const std::string& ip, int port, IOMultiplexer::IOType io_type, IThreadPool* pool, EnhancedConfigReader* config) {
             Logger::info("创建RedisApplicationServer实例: " + ip + ":" + std::to_string(port));
             return std::make_unique<RedisApplicationServer>(ip, port, io_type, pool);
         });

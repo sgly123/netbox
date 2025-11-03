@@ -79,6 +79,7 @@ include_directories(
 # 查找依赖库
 find_package(Threads REQUIRED)
 find_package(spdlog REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 # 主程序可执行文件
 add_executable(NetBox
@@ -110,6 +111,8 @@ add_executable(NetBox
     Protocol/src/HttpProtocol.cpp
     Protocol/src/RedisProtocol.cpp
     Protocol/src/PureRedisProtocol.cpp
+    Protocol/src/WebSocketProtocol.cpp
+    Protocol/src/base64.cpp
     Protocol/src/ProtocolFactory.cpp
     # 应用层
     app/src/server.cpp
@@ -117,6 +120,7 @@ add_executable(NetBox
     app/src/RedisApplicationServer.cpp
     app/src/DirectRedisServer.cpp
     app/src/UdpEchoServer.cpp
+    app/src/WebSocketServer.cpp
     # 插件化框架
     NetFramework/src/app/ApplicationRegistry.cpp
     # 应用插件
@@ -124,6 +128,7 @@ add_executable(NetBox
     plugins/redis/RedisApplicationPlugin.cpp
     plugins/redis/DirectRedisPlugin.cpp
     plugins/udp/UdpEchoPlugin.cpp
+    plugins/websocket/WebSocketPlugin.cpp
 )
 
 # 链接库 - 跨平台支持
@@ -131,6 +136,8 @@ target_link_libraries(NetBox PRIVATE
     Threads::Threads
     spdlog::spdlog
     fmt::fmt
+    OpenSSL::SSL
+    OpenSSL::Crypto
     ${PLATFORM_LIBS}  # 平台特定库
 )
 
@@ -245,6 +252,40 @@ install(DIRECTORY docs/
 
 # 启用测试
 option(BUILD_TESTS "Build unit tests" OFF)
+
+# WebSocket测试程序
+add_executable(WebSocketTest
+    app/src/WebSocketTest.cpp
+    app/src/WebSocketServer.cpp
+    app/src/ApplicationServer.cpp
+    Protocol/src/WebSocketProtocol.cpp
+    Protocol/src/base64.cpp
+    Protocol/src/ProtocolBase.cpp
+    Protocol/src/ProtocolRouter.cpp
+    Protocol/src/ProtocolFactory.cpp
+    Protocol/src/PureRedisProtocol.cpp
+    NetFramework/src/server/TcpServer.cpp
+    NetFramework/src/server/server.cpp
+    NetFramework/src/base/Logger.cpp
+    NetFramework/src/base/AsyncConsoleLogger.cpp
+    NetFramework/src/base/AsyncLogger.cpp
+    NetFramework/src/base/ThreadPool.cpp
+    NetFramework/src/base/DoubleLockThreadPool.cpp
+    NetFramework/src/base/SpdlogLogger.cpp
+    NetFramework/src/util/ConfigReader.cpp
+    NetFramework/src/util/EnhancedConfigReader.cpp
+    NetFramework/src/IO/SelectMultiplexer.cpp
+    $<$<PLATFORM_ID:Linux>:NetFramework/src/IO/EpollMultiplexer.cpp>
+    $<$<PLATFORM_ID:Linux>:NetFramework/src/IO/PollMultiplexer.cpp>
+)
+target_link_libraries(WebSocketTest PRIVATE
+    Threads::Threads
+    spdlog::spdlog
+    fmt::fmt
+    OpenSSL::SSL
+    OpenSSL::Crypto
+    ${PLATFORM_LIBS}
+)
 
 if(BUILD_TESTS AND EXISTS "${CMAKE_SOURCE_DIR}/tests")
     enable_testing()

@@ -19,4 +19,4 @@
             } \
         }; \
         static PROTOCOL_CLASS##Register global_##PROTOCOL_CLASS##_register; \
-    } 
+    }
