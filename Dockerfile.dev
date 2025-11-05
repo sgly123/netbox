@@ -6,6 +6,15 @@ FROM ubuntu:22.04
 # 设置环境变量
 ENV DEBIAN_FRONTEND=noninteractive
 
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y tzdata \
+    && rm -rf /var/lib/apt/lists/*
+# 配置上海时区
+ENV TZ=Asia/Shanghai
+# 手动创建 localtime 软链接（alpine 需显式配置）
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
+    && echo $TZ > /etc/timezone
+
 # 更换为国内镜像源
 RUN sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
     sed -i 's/security.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list

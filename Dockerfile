@@ -11,6 +11,15 @@ ENV GCC_VERSION=11
 
 # 使用官方源（通常更稳定）
 # 如果下载慢，可以尝试使用清华源：
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y tzdata \
+    && rm -rf /var/lib/apt/lists/*
+# 配置上海时区
+ENV TZ=Asia/Shanghai
+# 手动创建 localtime 软链接（alpine 需显式配置）
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
+    && echo $TZ > /etc/timezone
+
  RUN sed -i 's/archive.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list && \
      sed -i 's/security.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
 
