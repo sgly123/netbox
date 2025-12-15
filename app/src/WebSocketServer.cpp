@@ -3,6 +3,9 @@
 #include "ProtocolFactory.h"
 #include "IO/IOFactory.h"
 #include <iostream>
+#include <thread>
+#include <vector>
+#include <algorithm>
 // --------------- UTF-8 校验 -----------------
 static bool isValidUtf8(const std::string& str) {
     const unsigned char* s = reinterpret_cast<const unsigned char*>(str.data());
@@ -145,103 +148,86 @@ std::string WebSocketServer::generateHandshakeResponse(const std::string& client
 }
 
 void WebSocketServer::sendRawData(int clientSocket, const std::string& data) {
-    // 发送原始数据到客户端
-    ::send(clientSocket, data.c_str(), data.length(), 0);
-    Logger::debug("Sent raw data to client " + std::to_string(clientSocket) + ", length: " + std::to_string(data.length()));
+    // 发送原始数据到客户端，支持部分发送重试
+    size_t totalSent = 0;
+    size_t remaining = data.length();
+    const char* ptr = data.c_str();
+    
+    while (remaining > 0) {
+        ssize_t sent = ::send(clientSocket, ptr + totalSent, remaining, 0);
+        if (sent < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                // 缓冲区满，短暂等待后重试
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                continue;
+            }
+            Logger::error("发送握手响应失败，客户端 " + std::to_string(clientSocket) + 
+                         ": " + std::string(strerror(errno)));
+            return;
+        }
+        totalSent += sent;
+        remaining -= sent;
+    }
+    
+    Logger::debug("Sent raw data to client " + std::to_string(clientSocket) + 
+                 ", length: " + std::to_string(data.length()));
 }
 
 void WebSocketServer::broadcast(const std::string& msg) {
-    // 加锁保护m_clients的访问
-    std::lock_guard<std::mutex> lock(clientsMutex_);
-    Logger::info("开始广播消息给 " + std::to_string(m_clients.size()) + " 个客户端: " + msg);
-
-    // 为每个客户端使用其独立的协议实例打包并发送
-    for (auto it = m_clients.begin(); it != m_clients.end(); ) {
-        int clientFd = *it;
-        
-        // 获取该客户端的协议实例（需要单独加锁）
-        std::shared_ptr<WebSocketProtocol> wsProto;
-        {
-            std::lock_guard<std::mutex> protoLock(m_clientProtocolsMutex);
-            auto protoIt = m_clientProtocols.find(clientFd);
-            if (protoIt == m_clientProtocols.end()) {
-                Logger::warn("客户端 " + std::to_string(clientFd) + " 没有协议实例，跳过");
-                ++it;
-                continue;
-            }
-            wsProto = std::dynamic_pointer_cast<WebSocketProtocol>(protoIt->second);
+    // 1. 只打包一次消息（复用同一个帧）
+    std::vector<char> frame;
+    {
+        std::lock_guard<std::mutex> protoLock(m_clientProtocolsMutex);
+        if (m_clientProtocols.empty()) {
+            Logger::warn("没有客户端协议实例");
+            return;
         }
-        
-        if (!wsProto) {
-            Logger::warn("客户端 " + std::to_string(clientFd) + " 协议实例类型错误，跳过");
-            ++it;
-            continue;
+        auto firstProto = std::dynamic_pointer_cast<WebSocketProtocol>(m_clientProtocols.begin()->second);
+        if (!firstProto || !firstProto->packTextMessage(msg, frame)) {
+            Logger::error("打包广播消息失败");
+            return;
         }
-        
-        // 为该客户端打包消息
-        std::vector<char> frame;
-        if (!wsProto->packTextMessage(msg, frame)) {
-            Logger::error("为客户端 " + std::to_string(clientFd) + " 打包消息失败");
-            ++it;
-            continue;
+    }
+    
+    // 2. 快速复制客户端列表（减少锁持有时间）
+    std::vector<int> clients;
+    {
+        std::lock_guard<std::mutex> lock(clientsMutex_);
+        clients.reserve(m_clients.size());
+        for (int fd : m_clients) {
+            clients.push_back(fd);
         }
+    }
+    
+    // 3. 单线程快速广播（避免线程创建开销和竞争）
+    std::atomic<int> successCount{0};
+    std::atomic<int> failCount{0};
+    
+    for (int clientFd : clients) {
+        // 使用 MSG_DONTWAIT 非阻塞发送
+        ssize_t sent = ::send(clientFd, frame.data(), frame.size(), MSG_DONTWAIT);
         
-        // 严格检查：确保帧不带掩码
-        if (frame.size() >= 2) {
-            uint8_t byte2 = static_cast<uint8_t>(frame[1]);
-            if (byte2 & 0x80) {
-                Logger::error("❌❌❌ 致命错误：客户端 " + std::to_string(clientFd) + 
-                             " 的帧带掩码！byte2=0x" + std::to_string(byte2));
-                std::ostringstream hex;
-                for (size_t i = 0; i < std::min(frame.size(), size_t(16)); ++i) {
-                    hex << std::hex << std::setw(2) << std::setfill('0') << (int)(uint8_t)frame[i] << " ";
-                }
-                Logger::error("错误帧: " + hex.str());
-                ++it;
-                continue; // 不发送带掩码的帧
-            }
-        }
-        
-        // 获取该客户端的发送锁（防止帧交错）
-        std::shared_ptr<std::mutex> sendMutex;
-        {
-            std::lock_guard<std::mutex> sendMutexLock(m_sendMutexesMapMutex);
-            auto mutexIt = m_clientSendMutexes.find(clientFd);
-            if (mutexIt != m_clientSendMutexes.end()) {
-                sendMutex = mutexIt->second;
-            } else {
-                Logger::warn("⚠️ 客户端 " + std::to_string(clientFd) + " 的发送锁不存在！");
-            }
-        }
-        
-        // 发送帧（加锁防止交错）
-        ssize_t sent;
-        if (sendMutex) {
-            std::lock_guard<std::mutex> sendLock(*sendMutex);
-            sent = ::send(clientFd, frame.data(), frame.size(), 0);
-            Logger::debug("🔒 使用锁发送到客户端 " + std::to_string(clientFd));
+        if (sent == (ssize_t)frame.size()) {
+            // 完整发送成功
+            successCount++;
+        } else if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+            // 发送缓冲区满，使用TCP层的发送队列
+            sendBusinessData(clientFd, std::string(frame.begin(), frame.end()));
+            successCount++;
+        } else if (sent > 0 && sent < (ssize_t)frame.size()) {
+            // 部分发送，剩余部分加入队列
+            sendBusinessData(clientFd, std::string(frame.begin() + sent, frame.end()));
+            successCount++;
         } else {
-            // 如果锁不存在就直接发送（降级处理）
-            sent = ::send(clientFd, frame.data(), frame.size(), 0);
-            Logger::warn("⚠️ 降级：直接发送到客户端 " + std::to_string(clientFd));
+            // 发送失败
+            failCount++;
         }
-        
-        // 打印发送的帧内容（调试）
-        std::ostringstream hexdump;
-        for (size_t i = 0; i < std::min(frame.size(), size_t(16)); ++i) {
-            hexdump << std::hex << std::setw(2) << std::setfill('0') << (int)(uint8_t)frame[i] << " ";
-        }
-
-        if (sent < 0) {
-            Logger::error("广播到客户端 " + std::to_string(clientFd) + " 失败: " + std::string(strerror(errno)));
-            it = m_clients.erase(it);
-        } else if (static_cast<size_t>(sent) != frame.size()) {
-            Logger::warn("客户端 " + std::to_string(clientFd) + " 发送不完整: 发送 " + std::to_string(sent) + " / " + std::to_string(frame.size()) + " 字节");
-            ++it;
-        } else {
-            Logger::info("✅ 广播到客户端 " + std::to_string(clientFd) + " 成功: " + std::to_string(sent) + " 字节, 帧=" + hexdump.str());
-            ++it;
-        }
+    }
+    
+    // 只在有失败时打印
+    if (failCount.load() > 0) {
+        Logger::warn("广播完成: 成功=" + std::to_string(successCount.load()) + 
+                     ", 失败=" + std::to_string(failCount.load()));
     }
 }
 

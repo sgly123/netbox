@@ -183,14 +183,23 @@ void PureRedisProtocol::sendDirectResponse(int clientFd, const std::string& resp
         }
     }
     
-    // 2. 发送标准RESP响应（不需要额外过滤）
+    // 2. 发送标准RESP响应（使用非阻塞发送）
     std::lock_guard<std::mutex> lock(m_sendMutex);
     Logger::debug("发送RESP响应: " + response);
     
     if (clientFd > 0) {
-        ssize_t sent = ::send(clientFd, response.c_str(), response.length(), 0);
+        // 使用非阻塞发送，避免阻塞
+        ssize_t sent = ::send(clientFd, response.c_str(), response.length(), MSG_DONTWAIT);
         if (sent > 0) {
             Logger::info("PureRedisProtocol 发送成功，长度: " + std::to_string(sent));
+        } else if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+            // 缓冲区满，尝试阻塞发送
+            sent = ::send(clientFd, response.c_str(), response.length(), 0);
+            if (sent > 0) {
+                Logger::info("PureRedisProtocol 阻塞发送成功，长度: " + std::to_string(sent));
+            } else {
+                Logger::error("PureRedisProtocol 发送失败，错误码: " + std::to_string(errno));
+            }
         } else {
             Logger::error("PureRedisProtocol 发送失败，错误码: " + std::to_string(errno));
         }

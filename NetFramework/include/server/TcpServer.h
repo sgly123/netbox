@@ -92,6 +92,10 @@ public:
     // 智能心跳控制
     void setHeartbeatEnabled(bool enabled) { m_heartbeatEnabled = enabled; }
 
+protected:
+    // 子类可用的发送接口
+    void sendBusinessData(int client_fd, const std::string& data);
+
 private:
     // 客户端发送缓冲区（确保非阻塞发送完整）
     std::unordered_map<int, std::deque<std::vector<char>>> m_sendBuffers;
@@ -105,7 +109,5 @@ private:
     void sendData(int client_fd, const char* data, size_t len, bool is_heartbeat);
 
     void flushSendBuffer(int client_fd);
-
-    void sendBusinessData(int client_fd, const std::string& data);
 };
 #endif // TCP_SERVER_H

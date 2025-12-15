@@ -112,7 +112,7 @@ class WebSocketBroadcastTester:
 if __name__ == "__main__":
     # 测试配置
     WEBSOCKET_URI = "ws://localhost:8001"  # 根据实际情况修改
-    NUM_CLIENTS = 3
+    NUM_CLIENTS = 10
     
     tester = WebSocketBroadcastTester(WEBSOCKET_URI)
     tester.run_test(NUM_CLIENTS)

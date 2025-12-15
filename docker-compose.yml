@@ -91,6 +91,8 @@ services:
     networks:
       - netbox-network
     command: ["./NetBox", "config/config-websocket.yaml"]
+    # 资源限制（支持2000并发）
+    deploy:
     healthcheck:
       test: ["CMD", "ps", "aux", "|", "grep", "NetBox"]
       interval: 30s

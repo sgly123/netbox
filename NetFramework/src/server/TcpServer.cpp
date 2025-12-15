@@ -52,6 +52,18 @@ bool TcpServer::start() {
         close(m_socket);
         return false;
     }
+    
+    // 增大发送缓冲区（支持高并发和大量广播）
+    int sendbuf = 512 * 1024;  // 512KB
+    if (setsockopt(m_socket, SOL_SOCKET, SO_SNDBUF, &sendbuf, sizeof(sendbuf)) < 0) {
+        Logger::warn("设置发送缓冲区失败，使用默认值");
+    }
+    
+    // 增大接收缓冲区
+    int recvbuf = 512 * 1024;  // 512KB
+    if (setsockopt(m_socket, SOL_SOCKET, SO_RCVBUF, &recvbuf, sizeof(recvbuf)) < 0) {
+        Logger::warn("设置接收缓冲区失败，使用默认值");
+    }
     // 绑定地址
     sockaddr_in addr{};
     addr.sin_family = AF_INET;
@@ -66,12 +78,16 @@ bool TcpServer::start() {
         close(m_socket);
         return false;
     }
-    // 监听
-    if (listen(m_socket, 20000) < 0) {
+    // 监听 - 设置更大的backlog并设置为非阻塞
+    if (listen(m_socket, SOMAXCONN) < 0) {
         Logger::error("listen failed");
         close(m_socket);
         return false;
     }
+    
+    // 设置监听socket为非阻塞模式，支持批量accept
+    int flags = fcntl(m_socket, F_GETFL, 0);
+    fcntl(m_socket, F_SETFL, flags | O_NONBLOCK);
     // 初始化IO多路复用器
     if (!m_io->init()) {
         Logger::error("IO多路复用器初始化失败");
@@ -93,14 +109,14 @@ bool TcpServer::start() {
 void TcpServer::run() {
     while (m_running) {
         std::vector<std::pair<int, IOMultiplexer::EventType>> activeEvents;
-        int n = m_io->wait(activeEvents, 1000);
+        int n = m_io->wait(activeEvents, 100);  // 100ms超时
         if (n < 0) {
             Logger::error("等待事件失败");
             continue;
         }
         for (auto& [fd, event] : activeEvents) {
             if (fd == m_socket) {
-                handleAccept();
+                handleAccept();  // 现在会批量接受连接
             } else if (event & IOMultiplexer::EventType::READ) {
                 handleRead(fd);
             } else if (event & IOMultiplexer::EventType::WRITE) {
@@ -127,32 +143,46 @@ void TcpServer::stop() {
 }
 
 void TcpServer::handleAccept() {
-    sockaddr_in client_addr{};
-    socklen_t len = sizeof(client_addr);
-    int client_fd = accept(m_socket, (sockaddr*)&client_addr, &len);
-    if (client_fd < 0) {
-        if (m_running) Logger::error("accept failed");
-        return;
+    // 批量接受连接，避免积压
+    for (int i = 0; i < 32; ++i) {  // 每次事件最多接受32个连接
+        sockaddr_in client_addr{};
+        socklen_t len = sizeof(client_addr);
+        int client_fd = accept(m_socket, (sockaddr*)&client_addr, &len);
+        if (client_fd < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                // 没有更多待接受的连接
+                break;
+            }
+            if (m_running) Logger::error("accept failed");
+            return;
+        }
+        // 设置非阻塞
+        int flags = fcntl(client_fd, F_GETFL, 0);
+        fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);
+        
+        // 为每个客户端连接设置大缓冲区（支持广播）
+        int client_sendbuf = 512 * 1024;  // 512KB
+        setsockopt(client_fd, SOL_SOCKET, SO_SNDBUF, &client_sendbuf, sizeof(client_sendbuf));
+        int client_recvbuf = 512 * 1024;  // 512KB
+        setsockopt(client_fd, SOL_SOCKET, SO_RCVBUF, &client_recvbuf, sizeof(client_recvbuf));
+        
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_clients[client_fd] = 1;
+            m_lastActive[client_fd] = std::chrono::steady_clock::now();
+        }
+        m_io->addfd(client_fd, IOMultiplexer::EventType::READ);
+        
+        // 调用虚函数（子类可重写）
+        onClientConnected(client_fd);
+        
+        // 调用回调函数（兼容旧代码）
+        if (m_onConnect) m_onConnect(client_fd);
+        
+        char ip[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &client_addr.sin_addr, ip, sizeof(ip));
+        Logger::info(std::string("[TcpServer] 客户端") + std::to_string(client_fd) + "连接成功（IP:" + ip + "）");
     }
-    // 设置非阻塞
-    int flags = fcntl(client_fd, F_GETFL, 0);
-    fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        m_clients[client_fd] = 1;
-        m_lastActive[client_fd] = std::chrono::steady_clock::now();
-    }
-    m_io->addfd(client_fd, IOMultiplexer::EventType::READ);
-    
-    // 调用虚函数（子类可重写）
-    onClientConnected(client_fd);
-    
-    // 调用回调函数（兼容旧代码）
-    if (m_onConnect) m_onConnect(client_fd);
-    
-    char ip[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &client_addr.sin_addr, ip, sizeof(ip));
-    Logger::info(std::string("[TcpServer] 客户端") + std::to_string(client_fd) + "连接成功（IP:" + ip + "）");
 }
 
 // 发送心跳包（使用新的发送逻辑）
