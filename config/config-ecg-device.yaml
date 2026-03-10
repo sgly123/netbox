@@ -1,0 +1,36 @@
+# 心电设备服务器配置文件
+
+# 应用配置
+application:
+  type: ecg_device        # 心电设备应用类型
+  version: 1.0            # 应用版本
+
+# 网络配置
+network:
+  ip: 0.0.0.0             # 监听所有网络接口
+  port: 8899              # 心电设备端口
+  io_type: epoll          # IO多路复用类型
+
+# 线程配置
+threading:
+  worker_threads: 4       # 工作线程数量
+
+# 设备配置
+device:
+  id: 1001                # 设备ID（唯一标识）
+  name: "ECG-001"         # 设备名称
+  heart_rate: 75          # 初始心率（BPM）
+  sample_rate: 500        # 采样率（Hz）
+
+# 日志配置
+logging:
+  level: info             # 日志级别
+  file: /app/logs/ecg-device.log  # 日志文件
+  async: true             # 异步日志
+
+# 性能配置
+performance:
+  max_connections: 10     # 最大客户端连接数
+  buffer_size: 65536      # 发送缓冲区大小（字节）
+  heartbeat_interval: 0   # 禁用TCP心跳（医疗设备使用自己的数据流）
+

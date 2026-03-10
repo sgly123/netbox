@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏭 智能工厂实时监控大屏</title>
+    <script src="https://cdn.jsdelivr.net/npm/mqtt@4.3.7/dist/mqtt.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin: 5px;
+        }
+
+        .status.connected {
+            background: #10b981;
+        }
+
+        .status.disconnected {
+            background: #ef4444;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .device-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s;
+        }
+
+        .device-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .device-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .device-name {
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+
+        .device-status {
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 0.8em;
+        }
+
+        .device-status.running {
+            background: #10b981;
+        }
+
+        .device-status.stopped {
+            background: #ef4444;
+        }
+
+        .device-status.warning {
+            background: #f59e0b;
+        }
+
+        .metrics {
+            display: grid;
+            gap: 15px;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            transition: background 0.3s;
+        }
+
+        .metric:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .metric-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .metric-icon {
+            font-size: 1.5em;
+        }
+
+        .metric-value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .metric-unit {
+            font-size: 0.8em;
+            opacity: 0.8;
+            margin-left: 5px;
+        }
+
+        .alert {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .charts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .chart-title {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            opacity: 0.8;
+        }
+
+        .connection-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏭 智能工厂实时监控大屏</h1>
+        <div class="connection-info">
+            <span class="status disconnected" id="mqttStatus">MQTT: 未连接</span>
+            <span class="status" id="dataCount">接收数据: 0 条</span>
+        </div>
+    </div>
+
+    <div class="dashboard" id="dashboard">
+        <!-- 设备卡片将动态生成 -->
+    </div>
+
+    <div class="charts">
+        <div class="chart-card">
+            <div class="chart-title">📈 温度趋势</div>
+            <canvas id="tempChart"></canvas>
+        </div>
+        <div class="chart-card">
+            <div class="chart-title">📊 压力趋势</div>
+            <canvas id="pressureChart"></canvas>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>NetBox 智能工厂监控系统 | 实时数据采集与可视化</p>
+    </div>
+
+    <script>
+        // MQTT配置
+        const MQTT_BROKER = 'ws://localhost:9001';  // WebSocket端口
+        const MQTT_TOPIC = 'factory/production/#';
+
+        // 数据存储
+        const devices = {};
+        let dataCount = 0;
+        let tempData = { labels: [], datasets: [] };
+        let pressureData = { labels: [], datasets: [] };
+
+        // 图标映射
+        const icons = {
+            temperature: '🌡️',
+            humidity: '💧',
+            pressure: '💨',
+            motor_status: '⚙️',
+            speed: '🔄',
+            count: '📦',
+            alarm: '⚠️'
+        };
+
+        // 连接MQTT
+        const client = mqtt.connect(MQTT_BROKER);
+
+        client.on('connect', () => {
+            console.log('✅ MQTT连接成功');
+            document.getElementById('mqttStatus').textContent = 'MQTT: 已连接';
+            document.getElementById('mqttStatus').className = 'status connected';
+            client.subscribe(MQTT_TOPIC);
+        });
+
+        client.on('error', (err) => {
+            console.error('❌ MQTT连接错误:', err);
+            document.getElementById('mqttStatus').textContent = 'MQTT: 连接失败';
+            document.getElementById('mqttStatus').className = 'status disconnected';
+        });
+
+        client.on('message', (topic, message) => {
+            try {
+                const data = JSON.parse(message.toString());
+                const deviceId = topic.split('/')[2];
+                
+                // 更新设备数据
+                devices[deviceId] = data;
+                dataCount++;
+                
+                // 更新界面
+                updateDashboard();
+                updateCharts(deviceId, data);
+                document.getElementById('dataCount').textContent = `接收数据: ${dataCount} 条`;
+                
+            } catch (err) {
+                console.error('数据解析错误:', err);
+            }
+        });
+
+        // 更新仪表盘
+        function updateDashboard() {
+            const dashboard = document.getElementById('dashboard');
+            dashboard.innerHTML = '';
+
+            for (const [deviceId, data] of Object.entries(devices)) {
+                const card = createDeviceCard(deviceId, data);
+                dashboard.appendChild(card);
+            }
+        }
+
+        // 创建设备卡片
+        function createDeviceCard(deviceId, data) {
+            const card = document.createElement('div');
+            card.className = 'device-card';
+
+            // 设备名称
+            const deviceName = deviceId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            
+            // 检查电机状态
+            const motorData = data.find(d => d.name.includes('motor_status'));
+            const isRunning = motorData && motorData.value === 1;
+            
+            // 检查温度报警
+            const tempData = data.find(d => d.name.includes('temperature'));
+            const hasAlert = tempData && tempData.value > 80;
+
+            card.innerHTML = `
+                <div class="device-header">
+                    <div class="device-name">${deviceName}</div>
+                    <div class="device-status ${isRunning ? 'running' : 'stopped'}">
+                        ${isRunning ? '运行中' : '已停止'}
+                    </div>
+                </div>
+                <div class="metrics">
+                    ${data.map(metric => createMetric(metric, hasAlert)).join('')}
+                </div>
+            `;
+
+            return card;
+        }
+
+        // 创建指标
+        function createMetric(metric, hasAlert) {
+            const icon = getIcon(metric.name);
+            const alertClass = hasAlert && metric.name.includes('temperature') ? 'alert' : '';
+            
+            return `
+                <div class="metric ${alertClass}">
+                    <div class="metric-name">
+                        <span class="metric-icon">${icon}</span>
+                        <span>${formatName(metric.name)}</span>
+                    </div>
+                    <div>
+                        <span class="metric-value">${metric.value.toFixed(1)}</span>
+                        <span class="metric-unit">${metric.unit}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 获取图标
+        function getIcon(name) {
+            for (const [key, icon] of Object.entries(icons)) {
+                if (name.includes(key)) return icon;
+            }
+            return '📈';
+        }
+
+        // 格式化名称
+        function formatName(name) {
+            const names = {
+                temperature: '温度',
+                humidity: '湿度',
+                pressure: '压力',
+                motor_status: '电机状态',
+                speed: '转速',
+                cycle_count: '循环次数',
+                product_count: '产品计数',
+                pass_count: '合格数',
+                fail_count: '不合格数',
+                alarm_code: '报警代码'
+            };
+            return names[name] || name;
+        }
+
+        // 初始化图表
+        const tempChart = new Chart(document.getElementById('tempChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { labels: { color: '#fff' } }
+                },
+                scales: {
+                    y: { 
+                        ticks: { color: '#fff' },
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    },
+                    x: { 
+                        ticks: { color: '#fff' },
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    }
+                }
+            }
+        });
+
+        const pressureChart = new Chart(document.getElementById('pressureChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { labels: { color: '#fff' } }
+                },
+                scales: {
+                    y: { 
+                        ticks: { color: '#fff' },
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    },
+                    x: { 
+                        ticks: { color: '#fff' },
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    }
+                }
+            }
+        });
+
+        // 更新图表
+        function updateCharts(deviceId, data) {
+            const now = new Date().toLocaleTimeString();
+            
+            // 温度数据
+            const tempMetric = data.find(d => d.name.includes('temperature'));
+            if (tempMetric) {
+                updateChart(tempChart, deviceId, now, tempMetric.value);
+            }
+            
+            // 压力数据
+            const pressureMetric = data.find(d => d.name.includes('pressure'));
+            if (pressureMetric) {
+                updateChart(pressureChart, deviceId, now, pressureMetric.value);
+            }
+        }
+
+        function updateChart(chart, deviceId, label, value) {
+            // 查找或创建数据集
+            let dataset = chart.data.datasets.find(ds => ds.label === deviceId);
+            if (!dataset) {
+                const colors = ['#10b981', '#3b82f6', '#f59e0b'];
+                const color = colors[chart.data.datasets.length % colors.length];
+                dataset = {
+                    label: deviceId,
+                    data: [],
+                    borderColor: color,
+                    backgroundColor: color + '33',
+                    tension: 0.4
+                };
+                chart.data.datasets.push(dataset);
+            }
+
+            // 添加数据点
+            if (!chart.data.labels.includes(label)) {
+                chart.data.labels.push(label);
+                if (chart.data.labels.length > 20) {
+                    chart.data.labels.shift();
+                }
+            }
+
+            dataset.data.push(value);
+            if (dataset.data.length > 20) {
+                dataset.data.shift();
+            }
+
+            chart.update();
+        }
+
+        // 提示信息
+        console.log('📊 监控大屏已启动');
+        console.log('📡 等待MQTT数据...');
+        console.log('💡 提示: 请确保Mosquitto启用了WebSocket支持（端口9001）');
+    </script>
+</body>
+</html>

@@ -123,7 +123,21 @@ bool EnhancedConfigReader::parseYamlLine(const std::string& line, std::string& c
 
 std::string EnhancedConfigReader::getString(const std::string& key, const std::string& defaultValue) const {
     auto it = m_config.find(key);
-    return (it != m_config.end()) ? it->second : defaultValue;
+    if (it == m_config.end()) {
+        return defaultValue;
+    }
+    
+    std::string value = it->second;
+    
+    // 去除可能的引号（单引号或双引号）
+    if (value.length() >= 2) {
+        if ((value.front() == '"' && value.back() == '"') ||
+            (value.front() == '\'' && value.back() == '\'')) {
+            value = value.substr(1, value.length() - 2);
+        }
+    }
+    
+    return value;
 }
 
 int EnhancedConfigReader::getInt(const std::string& key, int defaultValue) const {

@@ -18,7 +18,7 @@ std::string RedisProtocol::getType() const {
 
 void RedisProtocol::reset() {
     m_clientBuffers.clear();
-    Logger::debug("RedisProtocol状态已重置");
+    // Logger::debug("RedisProtocol状态已重置");
 }
 
 size_t RedisProtocol::onDataReceived(const char* data, size_t len) {
@@ -30,29 +30,29 @@ size_t RedisProtocol::onClientDataReceived(int clientFd, const char* data, size_
     Logger::info("RedisProtocol收到客户端" + std::to_string(clientFd) + "的数据，长度: " + std::to_string(len));
     
     // 调试：打印原始数据的十六进制
-    std::ostringstream hexStream;
-    hexStream << "Redis原始数据十六进制: ";
-    for (size_t i = 0; i < len && i < 50; ++i) {
-        hexStream << std::hex << std::setw(2) << std::setfill('0') << (unsigned char)data[i] << " ";
-    }
-    Logger::debug(hexStream.str());
+    // std::ostringstream hexStream;
+    // hexStream << "Redis原始数据十六进制: ";
+    // for (size_t i = 0; i < len && i < 50; ++i) {
+    //     hexStream << std::hex << std::setw(2) << std::setfill('0') << (unsigned char)data[i] << " ";
+    // }
+    // Logger::debug(hexStream.str());
     
     // 调试：打印原始数据的可打印字符
-    std::ostringstream charStream;
-    charStream << "Redis原始数据字符: ";
-    for (size_t i = 0; i < len; ++i) {
-        char c = data[i];
-        if (c >= 32 && c <= 126) {
-            charStream << c;
-        } else if (c == '\r') {
-            charStream << "\\r";
-        } else if (c == '\n') {
-            charStream << "\\n";
-        } else {
-            charStream << "[" << (int)(unsigned char)c << "]";
-        }
-    }
-    Logger::debug(charStream.str());
+    // std::ostringstream charStream;
+    // charStream << "Redis原始数据字符: ";
+    // for (size_t i = 0; i < len; ++i) {
+    //     char c = data[i];
+    //     if (c >= 32 && c <= 126) {
+    //         charStream << c;
+    //     } else if (c == '\r') {
+    //         charStream << "\\r";
+    //     } else if (c == '\n') {
+    //         charStream << "\\n";
+    //     } else {
+    //         charStream << "[" << (int)(unsigned char)c << "]";
+    //     }
+    // }
+    // Logger::debug(charStream.str());
     
     // 将数据添加到客户端缓冲区
     std::string& buffer = m_clientBuffers[clientFd];
@@ -80,7 +80,7 @@ size_t RedisProtocol::onClientDataReceived(int clientFd, const char* data, size_
         processRedisCommand(clientFd, commandLine);
     }
     
-    Logger::debug("RedisProtocol处理了 " + std::to_string(totalProcessed) + " 字节");
+    // Logger::debug("RedisProtocol处理了 " + std::to_string(totalProcessed) + " 字节");
     return totalProcessed;
 }
 
@@ -90,7 +90,7 @@ bool RedisProtocol::pack(const char* data, size_t len, std::vector<char>& packet
     packet.reserve(len);
     packet.assign(data, data + len);
     
-    Logger::debug("RedisProtocol封包成功，长度: " + std::to_string(len));
+    // Logger::debug("RedisProtocol封包成功，长度: " + std::to_string(len));
     return true;
 }
 
@@ -118,9 +118,9 @@ void RedisProtocol::processRedisCommand(int clientFd, const std::string& command
     }
     
     Logger::info("Redis解析出 " + std::to_string(args.size()) + " 个参数");
-    for (size_t i = 0; i < args.size(); ++i) {
-        Logger::debug("Redis参数[" + std::to_string(i) + "]: '" + args[i] + "'");
-    }
+    // for (size_t i = 0; i < args.size(); ++i) {
+    //     Logger::debug("Redis参数[" + std::to_string(i) + "]: '" + args[i] + "'");
+    // }
     
     // 直接在协议层处理Redis命令，不依赖应用层回调
     std::string response = executeRedisCommand(args);
@@ -218,7 +218,7 @@ void RedisProtocol::sendDirectResponse(int clientFd, const std::string& response
 
     // 这里需要获取socket并直接发送
     // 由于我们在协议层，没有直接的socket访问，所以先记录日志
-    Logger::debug("需要发送的响应: " + response);
+    // Logger::debug("需要发送的响应: " + response);
 
     // TODO: 实现直接socket发送
     // 暂时通过回调机制发送

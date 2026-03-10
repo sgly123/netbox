@@ -59,7 +59,7 @@ protected:
     // 实现ApplicationServer要求的纯虚函数
     void initializeProtocolRouter() override {
         // UDP Echo服务器不需要协议路由器
-        Logger::debug("UDP Echo Server不使用协议路由器");
+        // Logger::debug("UDP Echo Server不使用协议路由器");
     }
 
     std::string handleHttpRequest(const std::string& request, int clientFd) override {
@@ -74,7 +74,7 @@ protected:
         // UDP Echo服务器的业务逻辑在UdpEchoServer中处理
         (void)command;  // 避免未使用参数警告
         (void)args;     // 避免未使用参数警告
-        Logger::debug("UDP Echo Server业务逻辑由UdpEchoServer处理");
+        // Logger::debug("UDP Echo Server业务逻辑由UdpEchoServer处理");
         return "";
     }
 

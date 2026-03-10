@@ -1,39 +1,147 @@
-# NetBox Docker环境配置文件
-# 专门为Docker容器化部署优化
+# NetBox Docker 默认配置文件
+# 用于Docker容器默认启动配置
+
+# 服务器基本信息
+server:
+  name: "NetBox Server"
+  version: "1.0.0"
+  description: "高性能网络服务器框架"
+
+# 网络配置
+network:
+  ip: "0.0.0.0"
+  port: 8888  # 默认使用Echo服务端口
+  io_type: "epoll"
+  max_connections: 2000
 
 # 应用配置
 application:
-  type: websocket          # 应用类型: echo, redis_app
-  version: 1.0             # 应用版本
+  type: ""  # 默认启动Echo服务
+  version: "1.0.0"
 
-# 网络配置 - Docker环境优化
-network:
-  ip: 0.0.0.0             # 监听所有网络接口（Docker必需）
-  port: 8000              # Redis协议端口
-  io_type: epoll          # IO多路复用类型（Linux优化）
-
-# 线程配置 - 根据容器资源调整
+# 线程配置
 threading:
-  worker_threads: 4       # 工作线程数量（Docker环境建议4-8）
+  worker_threads: 4
 
-# 日志配置 - Docker环境优化
+# 日志配置
 logging:
-  level: info             # 日志级别: debug, info, warn, error
-  file: /app/logs/server.log  # 日志文件路径（容器内路径）
-  async: true             # 是否使用异步日志
+  level: "info"
+  file: "/app/logs/netbox-server.log"
+  console: true
+  async: true
 
-# 性能配置 - Docker环境优化
+# 性能配置
 performance:
-  max_connections: 5000   # 最大连接数（Docker环境适当降低）
-  buffer_size: 4096       # 缓冲区大小
-  heartbeat_interval: 30  # 心跳间隔（秒）
+  buffer_size: 4096
+  heartbeat_interval: 30
 
-# 应用特定配置
+# Echo服务特定配置
 echo:
-  message_prefix: "NetBox Echo: "  # 回显消息前缀
+  message_prefix: "NetBox Echo: "
 
-# Mini Redis配置 - Docker环境优化
-mini_redis:
-  max_memory: 50MB        # 最大内存使用（Docker环境限制）
-  save_interval: 300      # 持久化间隔（秒）
-  enable_aof: true        # 是否启用AOF日志 
+# 插件配置
+plugins:
+  # UDP插件
+  udp:
+    enabled: true
+    port: 8889
+    buffer_size: 1024
+  
+  # TCP插件
+  tcp:
+    enabled: true
+    port: 8890
+    buffer_size: 4096
+
+# 协议支持
+protocols:
+  # WebSocket协议
+  websocket:
+    enabled: false
+    port: 8001
+    max_frame_size: 65536
+    enable_compression: false
+  
+  # Redis协议
+  redis:
+    enabled: false
+    port: 6379
+    max_memory: "50MB"
+    enable_aof: true
+  
+  # IM协议
+  im:
+    enabled: false
+    port: 9000
+    max_users: 100000
+    session_timeout: 3600
+  
+  # 心电设备协议
+  ecg_device:
+    enabled: false
+    port: 8899
+    sample_rate: 500
+
+# 健康检查配置
+health_check:
+  enabled: true
+  interval: 30
+  timeout: 10
+  retries: 3
+
+# 监控配置
+monitoring:
+  enabled: true
+  metrics_port: 9090
+  collect_interval: 60
+
+# 安全配置
+security:
+  # 连接限制
+  connection_rate_limit: 100  # 每秒最大连接数
+  max_requests_per_minute: 1000
+  
+  # IP白名单（空表示允许所有）
+  ip_whitelist: []
+  
+  # IP黑名单
+  ip_blacklist: []
+
+# 数据持久化
+data:
+  # 数据目录
+  path: "/app/data"
+  
+  # 日志保留策略
+  log_retention_days: 7
+  
+  # 备份配置
+  backup:
+    enabled: true
+    interval: 86400  # 24小时
+    keep_count: 7
+
+# 环境特定配置
+environment:
+  # Docker环境变量
+  docker_mode: true
+  
+  # 时区设置
+  timezone: "Asia/Shanghai"
+  
+  # 资源限制
+  resource_limits:
+    max_memory: "512MB"
+    max_cpu: "1.0"
+
+# 调试配置
+debug:
+  enabled: false
+  level: "info"
+  port: 9999
+  
+  # 性能分析
+  profiling:
+    enabled: false
+    port: 6060
+    interval: 60

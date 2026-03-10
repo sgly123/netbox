@@ -1,0 +1,89 @@
+# 即时通讯服务器配置文件
+
+server:
+  name: "NetBox IM Server"
+  version: "1.0.0"
+  description: "企业级即时通讯服务器"
+
+network:
+  ip: "0.0.0.0"
+  port: 9000
+  io_type: "epoll"  # epoll/select/poll
+  max_connections: 10000
+  
+application:
+  type: im_server
+  
+logging:
+  level: "info"  # debug/info/warn/error
+  file: "logs/im_server.log"
+  console: true
+  
+features:
+  # 用户管理
+  user_management:
+    enabled: true
+    max_users: 100000
+    session_timeout: 3600  # 秒
+    
+  # 好友系统
+  friend_system:
+    enabled: true
+    max_friends_per_user: 500
+    
+  # 消息系统
+  message_system:
+    enabled: true
+    offline_message_limit: 1000
+    message_retention_days: 30
+    
+  # 群组系统
+  group_system:
+    enabled: true
+    max_groups_per_user: 100
+    max_members_per_group: 500
+    
+  # 文件传输
+  file_transfer:
+    enabled: true
+    max_file_size: 104857600  # 100MB
+    chunk_size: 65536  # 64KB
+    upload_path: "data/uploads"
+    
+  # 心跳配置
+  heartbeat:
+    enabled: true
+    interval: 30  # 秒（客户端发送心跳间隔）
+    timeout: 600  # 秒（服务器超时时间，10分钟无活动则断开）
+
+# 数据库配置（未来扩展）
+database:
+  type: "sqlite"  # sqlite/mysql/postgresql
+  path: "data/im.db"
+  
+# Redis配置（用于分布式部署）
+redis:
+  enabled: false
+  host: "127.0.0.1"
+  port: 6379
+  password: ""
+  db: 0
+
+# AI助手配置
+ai_assistant:
+  enabled: true
+  user_id: 999
+  username: "ai_assistant"
+  nickname: "AI助手"
+  provider: "deepseek"
+  api_key: "sk-9ca28968f50d43b78e8baf4fbb02d263"
+  api_url: "https://api.deepseek.com/v1/chat/completions"
+  model: "deepseek-chat"
+  max_tokens: 1000
+  temperature: 0.7
+  timeout: 30
+  system_prompt: "你是一个友好的AI助手，帮助用户解答问题。请用简洁、友好的语言回复。"
+  rate_limit_enabled: true
+  max_requests_per_minute: 10
+  max_requests_per_hour: 100
+  max_requests_per_day: 500

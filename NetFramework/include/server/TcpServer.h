@@ -91,6 +91,7 @@ protected:
 public:
     // 智能心跳控制
     void setHeartbeatEnabled(bool enabled) { m_heartbeatEnabled = enabled; }
+    void setHeartbeatTimeout(int timeout) { m_heartbeatTimeout = timeout; }
 
 protected:
     // 子类可用的发送接口

@@ -1,0 +1,70 @@
+# IoT网关配置文件
+
+server:
+  name: IoT Gateway Server
+  version: 1.0.0
+
+network:
+  ip: 0.0.0.0
+  port: 5030
+  io_type: epoll
+  max_connections: 50
+
+application:
+  type: iot_gateway
+
+logging:
+  level: info
+  file: logs/iot_gateway.log
+  console: true
+
+# MQTT配置
+mqtt:
+  # Docker环境使用 mosquitto-broker，本地测试使用 localhost
+  broker: tcp://mosquitto-broker:1883
+  client_id: netbox_iot_gateway
+  topic_prefix: factory/production
+  qos: 1
+
+# Modbus设备配置
+devices.0.id: device_001
+devices.0.name: 注塑机
+devices.0.host: factory-device-simulator
+devices.0.port: 5021
+devices.0.slave_id: 1
+devices.0.start_address: 0
+devices.0.register_count: 6
+devices.0.poll_interval: 2
+devices.0.register_names.0: temperature
+devices.0.register_names.1: pressure
+devices.0.register_names.2: motor_status
+devices.0.register_names.3: speed
+devices.0.register_names.4: cycle_count
+devices.0.register_names.5: alarm_code
+
+devices.1.id: device_002
+devices.1.name: 包装机
+devices.1.host: factory-device-simulator
+devices.1.port: 5022
+devices.1.slave_id: 1
+devices.1.start_address: 0
+devices.1.register_count: 5
+devices.1.poll_interval: 2
+devices.1.register_names.0: temperature
+devices.1.register_names.1: humidity
+devices.1.register_names.2: motor_status
+devices.1.register_names.3: speed
+devices.1.register_names.4: product_count
+
+devices.2.id: device_003
+devices.2.name: 质检设备
+devices.2.host: factory-device-simulator
+devices.2.port: 5023
+devices.2.slave_id: 1
+devices.2.start_address: 0
+devices.2.register_count: 4
+devices.2.poll_interval: 2
+devices.2.register_names.0: temperature
+devices.2.register_names.1: motor_status
+devices.2.register_names.2: pass_count
+devices.2.register_names.3: fail_count

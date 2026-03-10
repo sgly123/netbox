@@ -1,0 +1,46 @@
+application:
+  type: "vision_server"
+
+network:
+  ip: "0.0.0.0"
+  port: 5040
+  io_type: "epoll"
+  thread_pool: 0
+
+vision:
+  server:
+    ip: "0.0.0.0"
+    port: 5040
+    io_type: "epoll"
+  
+  source:
+    type: "camera"         # 使用真实摄像头
+    path: "0"              # 摄像头ID（0表示/dev/video0，1表示/dev/video1）
+    width: 640
+    height: 480
+    fps: 30
+  
+  detection:
+    algorithm: "motion"       # 运动检测算法
+    threshold: 0.5            # 检测阈值（0-1，值越大越不敏感，减少误检）
+    min_area: 1000            # 最小轮廓面积（像素，增大以过滤小噪声）
+    event_cooldown_ms: 2000   # 事件冷却时间（毫秒），防止频繁触发
+  
+  mqtt:
+    broker: "tcp://localhost:1883"    # MQTT broker地址（可选，如果没有mosquitto会警告但仍能运行）
+    client_id: "vision_server"
+    topic_prefix: "vision/events"
+    qos: 1
+  
+  recording:
+    enabled: true          # 启用自动录像（检测到事件时自动开始录像）
+    duration: 15           # 录像时长（秒）- 每次录像15秒
+  
+  snapshot:
+    enabled: false         # 禁用自动截图（减少磁盘I/O和存储占用）
+  
+  output:
+    directory: "./output/vision"     # 输出根目录
+    snapshot_dir: "./output/vision/snapshots"   # 截图保存目录（图片单独存放）
+    recording_dir: "./output/vision/recordings" # 录像保存目录（视频单独存放）
+

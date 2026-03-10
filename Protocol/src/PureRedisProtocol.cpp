@@ -26,7 +26,7 @@ std::string PureRedisProtocol::getType() const {
 
 void PureRedisProtocol::reset() {
     m_clientBuffers.clear();
-    Logger::debug("PureRedisProtocol状态已重置");
+    // Logger::debug("PureRedisProtocol状态已重置");
 }
 
 size_t PureRedisProtocol::onDataReceived(const char* data, size_t len) {
@@ -185,7 +185,7 @@ void PureRedisProtocol::sendDirectResponse(int clientFd, const std::string& resp
     
     // 2. 发送标准RESP响应（使用非阻塞发送）
     std::lock_guard<std::mutex> lock(m_sendMutex);
-    Logger::debug("发送RESP响应: " + response);
+    // Logger::debug("发送RESP响应: " + response);
     
     if (clientFd > 0) {
         // 使用非阻塞发送，避免阻塞
@@ -219,7 +219,7 @@ std::string PureRedisProtocol::filterHeartbeat(const std::string& data) {
         
         // 检查是否是心跳包魔数
         if (ntohl(magic) == HEARTBEAT_MAGIC) {
-            Logger::debug("检测到心跳包魔数，移除4字节");
+        // Logger::debug("检测到心跳包魔数，移除4字节");
             filtered = filtered.substr(MAGIC_LEN);
             totalRemoved += MAGIC_LEN;
         } else {

@@ -42,12 +42,12 @@ WebSocketProtocol::WebSocketProtocol() : state_(State::CONNECTING) {
 }
 
 size_t WebSocketProtocol::onDataReceived(const char* data, size_t length) {
-    Logger::debug("WebSocketProtocol received data, length: " + std::to_string(length) + ", state: " + std::to_string(static_cast<int>(state_)));
+    // Logger::debug("WebSocketProtocol received data, length: " + std::to_string(length) + ", state: " + std::to_string(static_cast<int>(state_)));
     
     if (state_ == State::CONNECTING) {
         // 处理WebSocket握手
         std::string handshakeData(data, length);
-        Logger::debug("WebSocket handshake data: " + handshakeData);
+        // Logger::debug("WebSocket handshake data: " + handshakeData);
         if (handleHandshake(handshakeData)) {
             setState(State::OPEN);
             // 握手成功，清空缓冲区
@@ -80,7 +80,7 @@ size_t WebSocketProtocol::onDataReceived(const char* data, size_t length) {
                     buffer_.erase(buffer_.begin(), buffer_.begin() + totalConsumed);
                 }
                 // 返回处理的字节数
-                Logger::debug("WebSocket协议处理完成，总消耗字节数: " + std::to_string(totalConsumed));
+                // Logger::debug("WebSocket协议处理完成，总消耗字节数: " + std::to_string(totalConsumed));
                 return totalConsumed ? totalConsumed : length;
             }
             totalConsumed += bytesConsumed;
@@ -92,7 +92,7 @@ size_t WebSocketProtocol::onDataReceived(const char* data, size_t length) {
         }
         
         // 对于OPEN状态，我们返回处理的字节数，即使为0也没关系
-        Logger::debug("WebSocket协议处理完成，总消耗字节数: " + std::to_string(totalConsumed));
+        // Logger::debug("WebSocket协议处理完成，总消耗字节数: " + std::to_string(totalConsumed));
         return totalConsumed;
     } else if (state_ == State::CLOSED) {
         Logger::info("WebSocket连接已关闭，忽略收到的数据，长度: " + std::to_string(length));
@@ -105,20 +105,20 @@ size_t WebSocketProtocol::onDataReceived(const char* data, size_t length) {
 bool WebSocketProtocol::handleHandshake(const std::string& data) {
     // 检查是否是有效的HTTP请求
     if (data.find("GET ") != 0) {
-        Logger::debug("Not a GET request");
+        // Logger::debug("Not a GET request");
         return false;
     }
     
     // 查找WebSocket升级头部（更宽松的检查）
     if (data.find("Upgrade:") == std::string::npos && 
         data.find("upgrade:") == std::string::npos) {
-        Logger::debug("No Upgrade header found");
+        // Logger::debug("No Upgrade header found");
         return false;
     }
     
     if (data.find("websocket") == std::string::npos && 
         data.find("WebSocket") == std::string::npos) {
-        Logger::debug("No websocket keyword found in headers");
+        // Logger::debug("No websocket keyword found in headers");
         return false;
     }
     
@@ -132,7 +132,7 @@ bool WebSocketProtocol::handleHandshake(const std::string& data) {
     }
     
     if (keyPos == std::string::npos) {
-        Logger::debug("Sec-WebSocket-Key header not found");
+        // Logger::debug("Sec-WebSocket-Key header not found");
         return false;
     }
     
@@ -157,7 +157,7 @@ bool WebSocketProtocol::handleHandshake(const std::string& data) {
     clientKey.erase(0, clientKey.find_first_not_of(" \t\r\n"));
     clientKey.erase(clientKey.find_last_not_of(" \t\r\n") + 1);
     
-    Logger::debug("Client key: " + clientKey);
+    // Logger::debug("Client key: " + clientKey);
     std::string response = generateHandshakeResponse(clientKey);
     
     // 发送握手响应（使用原始帧回调）
@@ -193,7 +193,7 @@ std::string WebSocketProtocol::generateHandshakeResponse(const std::string& clie
     response << "Sec-WebSocket-Accept: " << acceptKey << "\r\n";
     response << "\r\n";
     
-    Logger::debug("Handshake response: " + response.str());
+    // Logger::debug("Handshake response: " + response.str());
     return response.str();
 }
 
@@ -235,26 +235,26 @@ if (opcode > 0x0A) {
     // 提取负载数据
     const char* payload = data + headerSize;
     std::string payloadData;
-    Logger::info("[调试] 解码前 payload 十六进制:");
-std::ostringstream raw;
-for (size_t i = 0; i < header.payload_length; ++i) {
-    raw << std::hex << std::setw(2) << std::setfill('0') << (unsigned char)payload[i] << ' ';
-}
-Logger::info(raw.str());
+    // Logger::info("[调试] 解码前 payload 十六进制:");
+// std::ostringstream raw;
+// for (size_t i = 0; i < header.payload_length; ++i) {
+//     raw << std::hex << std::setw(2) << std::setfill('0') << (unsigned char)payload[i] << ' ';
+// }
+// Logger::info(raw.str());
     if (header.masked) {
         payloadData = unmaskPayload(payload, header.payload_length, header.masking_key);
     } else {
         payloadData.assign(payload, header.payload_length);
     }
-    Logger::info("[调试] 解码后 payload 十六进制:");
-std::ostringstream oss;
-for (size_t i = 0; i < payloadData.size(); ++i) {
-    oss << std::hex << std::setw(2) << std::setfill('0') << (unsigned char)payloadData[i] << ' ';
-}
-Logger::info(oss.str());
+    // Logger::info("[调试] 解码后 payload 十六进制:");
+// std::ostringstream oss;
+// for (size_t i = 0; i < payloadData.size(); ++i) {
+//     oss << std::hex << std::setw(2) << std::setfill('0') << (unsigned char)payloadData[i] << ' ';
+// }
+// Logger::info(oss.str());
 
 // ✅ 打印解码后的字符串（可选）
-Logger::info("[调试] 解码后 payload 字符串: [" + payloadData + "]");
+// Logger::info("[调试] 解码后 payload 字符串: [" + payloadData + "]");
     // 处理不同类型的帧
     switch (header.opcode) {
         case FrameType::TEXT:
@@ -283,7 +283,7 @@ Logger::info("[调试] 解码后 payload 字符串: [" + payloadData + "]");
         if (packetCallback_) {
             std::vector<char> payloadVector(payloadData.begin(), payloadData.end());
             packetCallback_(payloadVector);
-            Logger::debug("TEXT frame (valid UTF-8) passed to application, length: " + std::to_string(payloadVector.size()));
+            // Logger::debug("TEXT frame (valid UTF-8) passed to application, length: " + std::to_string(payloadVector.size()));
         }
         break;
 
@@ -292,7 +292,7 @@ Logger::info("[调试] 解码后 payload 字符串: [" + payloadData + "]");
         if (packetCallback_) {
             std::vector<char> payloadVector(payloadData.begin(), payloadData.end());
             packetCallback_(payloadVector);
-            Logger::debug("BINARY frame passed to application, length: " + std::to_string(payloadVector.size()));
+            // Logger::debug("BINARY frame passed to application, length: " + std::to_string(payloadVector.size()));
         }
         break;
             
@@ -303,7 +303,7 @@ Logger::info("[调试] 解码后 payload 字符串: [" + payloadData + "]");
                 if (packPong(payloadData, pongFrame)) {
                     if (rawFrameCallback_) {
                         rawFrameCallback_(pongFrame);
-                        Logger::debug("PONG frame sent via raw frame callback");
+                        // Logger::debug("PONG frame sent via raw frame callback");
                     }
                 }
             }
@@ -396,7 +396,7 @@ bool WebSocketProtocol::parseFrameHeader(const char* data, size_t length,
         // WebSocket掩码键按字节顺序直接复制
         std::memcpy(header.masking_key, data + pos, 4);
         pos += 4;
-        Logger::debug("解析到掩码键（4字节）");
+        // Logger::debug("解析到掩码键（4字节）");
     }
     
     // 检查帧大小限制

@@ -10,7 +10,7 @@ ENV CMAKE_VERSION=3.25.1
 ENV GCC_VERSION=11
 
 # 使用官方源（通常更稳定）
-# 如果下载慢，可以尝试使用清华源：
+# 如果下载慢，可以尝试使用其他镜像源
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y tzdata \
     && rm -rf /var/lib/apt/lists/*
@@ -20,7 +20,8 @@ ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
     && echo $TZ > /etc/timezone
 
- RUN sed -i 's/archive.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list && \
+
+RUN sed -i 's/archive.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list && \
      sed -i 's/security.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
 
 # 安装构建依赖
@@ -30,6 +31,9 @@ RUN apt-get update && apt-get install -y \
     git \
     wget \
     curl \
+    libpaho-mqtt-dev \
+    libpaho-mqttpp-dev \
+    libcurl4-openssl-dev \
     pkg-config \
     libssl-dev \
     libboost-all-dev \
@@ -50,6 +54,7 @@ RUN cd build && \
     cmake .. \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_CXX_FLAGS="-O3 -DNDEBUG" \
+        -DENABLE_IOT_GATEWAY=ON \
     && make -j$(nproc)
 
 # 第二阶段：运行阶段
@@ -64,6 +69,12 @@ RUN apt-get update && apt-get install -y \
     libstdc++6 \
     libgcc-s1 \
     libspdlog1 \
+    libssl3 \
+    libcurl4 \
+    libboost-system1.74.0 \
+    libboost-thread1.74.0 \
+    libpaho-mqtt-dev \
+    libpaho-mqttpp-dev \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 

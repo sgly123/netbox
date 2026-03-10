@@ -191,7 +191,7 @@ void TcpServer::sendHeartbeat(int client_fd) {
 
     uint32_t magic = htonl(HEARTBEAT_MAGIC);
     sendData(client_fd, (char*)&magic, sizeof(magic), true);
-    Logger::debug("[TcpServer] 客户端" + std::to_string(client_fd) + "心跳包加入发送队列");
+    // Logger::debug("[TcpServer] 客户端" + std::to_string(client_fd) + "心跳包加入发送队列");
 }
 
 // 业务数据发送接口（供外部调用）
@@ -248,7 +248,7 @@ void TcpServer::handleRead(int client_fd) {
         if (magic_recv == HEARTBEAT_MAGIC) {
             // 识别到心跳包，跳过4字节
             processed += sizeof(uint32_t);
-            Logger::debug("[TcpServer] 客户端" + std::to_string(client_fd) + "过滤心跳包，累计处理: " + std::to_string(processed) + "字节");
+            // Logger::debug("[TcpServer] 客户端" + std::to_string(client_fd) + "过滤心跳包，累计处理: " + std::to_string(processed) + "字节");
         } else {
             // 非心跳包，退出循环
             break;

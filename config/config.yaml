@@ -8,7 +8,7 @@ application:
 
 # 网络配置
 network:
-  ip: 192.168.88.135       # 监听IP地址
+  ip: 0.0.0.0         # 监听IP地址（0.0.0.0表示监听所有网络接口）
   port: 8000          # 监听端口
   io_type: epoll      # IO多路复用类型: select, poll, epoll
 

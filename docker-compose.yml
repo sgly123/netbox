@@ -1,175 +1,85 @@
-# Docker Compose文件 - 双服务架构 + 开发者模式
-# 使用方法:
-#   生产模式: docker-compose up -d
-#   开发模式: docker-compose --profile dev up -d
-#   或设置环境变量: NETBOX_MODE=dev docker-compose up -d
+# Docker Compose - NetBox 核心服务架构
+# 面试演示场景: Echo, Redis, WebSocket, IM服务
 
 services:
-  # Echo服务器 - 生产模式
+  # Echo服务器
   netbox-echo:
     build:
       context: .
-      dockerfile: ${DOCKERFILE:-Dockerfile}
+      dockerfile: Dockerfile
     container_name: netbox-echo-server
     restart: unless-stopped
     ports:
-      - "8888:8888"  # Echo服务器端口
+      - "8888:8888"
     volumes:
-      # 生产模式：只挂载配置和日志
-      - ./config:/app/config:ro  # 配置文件挂载（只读）
-      - ./logs:/app/logs         # 日志目录挂载
-      - ./data:/app/data         # 数据目录挂载
-      # 开发模式：额外挂载源码（通过环境变量控制）
-      - ${SOURCE_MOUNT:-/dev/null}:/workspace
+      - ./config:/app/config:ro
+      - ./logs:/app/logs
+      - ./data:/app/data
     environment:
       - TZ=Asia/Shanghai
-      - NETBOX_MODE=${NETBOX_MODE:-production}
     networks:
       - netbox-network
     command: ["./NetBox", "config/config-echo.yaml"]
-    healthcheck:
-      test: ["CMD", "ps", "aux", "|", "grep", "NetBox"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    profiles:
-      - production
-      - ""  # 默认profile
 
-  # Redis服务器 - 生产模式
+  # Redis服务器
   netbox-redis:
     build:
       context: .
-      dockerfile: ${DOCKERFILE:-Dockerfile}
+      dockerfile: Dockerfile
     container_name: netbox-redis-server
     restart: unless-stopped
     ports:
-      - "6380:6379"  # Redis协议端口
+      - "6380:6379"
     volumes:
-      # 生产模式：只挂载配置和日志
-      - ./config:/app/config:ro  # 配置文件挂载（只读）
-      - ./logs:/app/logs         # 日志目录挂载
-      - ./data:/app/data         # 数据目录挂载
-      # 开发模式：额外挂载源码（通过环境变量控制）
-      - ${SOURCE_MOUNT:-/dev/null}:/workspace
+      - ./config:/app/config:ro
+      - ./logs:/app/logs
+      - ./data:/app/data
     environment:
       - TZ=Asia/Shanghai
-      - NETBOX_MODE=${NETBOX_MODE:-production}
     networks:
       - netbox-network
     command: ["./NetBox", "config/config-redis.yaml"]
-    healthcheck:
-      test: ["CMD", "ps", "aux", "|", "grep", "NetBox"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    profiles:
-      - production
-      - ""  # 默认profile
 
-  # WebSocket服务器 - 生产模式
+  # WebSocket服务器
   netbox-websocket:
     build:
       context: .
-      dockerfile: ${DOCKERFILE:-Dockerfile}
+      dockerfile: Dockerfile
     container_name: netbox-websocket-server
     restart: unless-stopped
     ports:
-      - "8001:8001"  # WebSocket服务器端口
+      - "8001:8001"
     volumes:
-      # 生产模式：只挂载配置和日志
-      - ./config:/app/config:ro  # 配置文件挂载（只读）
-      - ./logs:/app/logs         # 日志目录挂载
-      - ./data:/app/data         # 数据目录挂载
-      # 开发模式：额外挂载源码（通过环境变量控制）
-      - ${SOURCE_MOUNT:-/dev/null}:/workspace
+      - ./config:/app/config:ro
+      - ./logs:/app/logs
+      - ./data:/app/data
     environment:
       - TZ=Asia/Shanghai
-      - NETBOX_MODE=${NETBOX_MODE:-production}
     networks:
       - netbox-network
     command: ["./NetBox", "config/config-websocket.yaml"]
-    # 资源限制（支持2000并发）
-    deploy:
-    healthcheck:
-      test: ["CMD", "ps", "aux", "|", "grep", "NetBox"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    profiles:
-      - production
-      - ""  # 默认profile
 
-  # 开发模式 - 统一开发容器
-  netbox-dev:
+  # IM即时通讯服务器
+  netbox-im:
     build:
       context: .
-      dockerfile: Dockerfile.dev
-    container_name: netbox-dev-server
+      dockerfile: Dockerfile
+    container_name: netbox-im-server
     restart: unless-stopped
     ports:
-      - "6379:6379"  # Redis协议端口
-      - "8888:8888"  # Echo服务器端口
-      - "8001:8001"  # WebSocket服务器端口
-      - "9999:9999"  # 调试端口
+      - "9000:9000"
     volumes:
-      # 开发模式：源码实时挂载
-      - .:/workspace:rw                    # 整个项目源码（可读写）
-      - ./config:/app/config:ro            # 配置文件
-      - ./logs:/app/logs                   # 日志目录
-      - ./data:/app/data                   # 数据目录
-      - build-cache:/workspace/build       # 构建缓存持久化
+      - ./config:/app/config:ro
+      - ./logs:/app/logs
+      - ./data:/app/data
     environment:
       - TZ=Asia/Shanghai
-      - NETBOX_MODE=development
-      - DEBUG=1
-      - CC=gcc
-      - CXX=g++
     networks:
       - netbox-network
-    working_dir: /workspace
-    # 开发模式启动脚本
-    command: >
-      bash -c "
-        echo '🔧 NetBox 开发模式启动...' &&
-        echo '📁 源码已挂载到 /workspace，支持实时修改' &&
-        echo '🔨 编译命令:' &&
-        echo '  cd /workspace' &&
-        echo '  mkdir -p build && cd build' &&
-        echo '  cmake .. -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=OFF' &&
-        echo '  make -j\$(nproc)' &&
-        echo '' &&
-        echo '🚀 启动命令:' &&
-        echo '  Echo服务: ./build/bin/NetBox config/config-echo.yaml' &&
-        echo '  Redis服务: ./build/bin/NetBox config/config-redis.yaml' &&
-        echo '  WebSocket服务: ./build/bin/NetBox config/config-websocket.yaml' &&
-        echo '' &&
-        echo '📝 容器保持运行，请手动进入容器操作:' &&
-        echo '  docker exec -it netbox-dev-server bash' &&
-        echo '' &&
-        tail -f /dev/null
-      "
-    healthcheck:
-      test: ["CMD", "test", "-d", "/workspace"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    profiles:
-      - dev
-      - development
+    command: ["./NetBox", "config/config-im.yaml"]
+
 
 networks:
   netbox-network:
     driver: bridge
     name: netbox-network
-volumes:
-  netbox-logs:
-    driver: local
-  netbox-data:
-    driver: local
-  build-cache:
-    driver: local

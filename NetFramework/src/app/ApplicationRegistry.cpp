@@ -36,7 +36,14 @@ std::unique_ptr<ApplicationServer> ApplicationRegistry::createApplication(
     // 查找应用创建函数
     auto it = m_creators.find(name);
     if (it == m_creators.end()) {
-        Logger::error("未找到应用类型: " + name);
+        Logger::error("未找到应用类型: \"" + name + "\" (长度: " + std::to_string(name.length()) + ")");
+        
+        // 调试：显示所有已注册的应用
+        Logger::info("已注册的应用列表:");
+        for (const auto& pair : m_creators) {
+            Logger::info("  - \"" + pair.first + "\" (长度: " + std::to_string(pair.first.length()) + ")");
+        }
+        
         return nullptr;
     }
     

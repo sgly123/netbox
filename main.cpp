@@ -69,6 +69,12 @@ int main(int argc, char* argv[]) {
 
     // 从配置文件读取应用类型和服务器参数
     std::string app_type = config.getString("application.type", "echo");        // 应用类型
+    
+    // 去除可能的引号
+    if (!app_type.empty() && app_type.front() == '"' && app_type.back() == '"') {
+        app_type = app_type.substr(1, app_type.length() - 2);
+    }
+    
     std::string ip = config.getString("network.ip", "127.0.0.1");              // 监听IP
     int port = config.getInt("network.port", 8888);                            // 监听端口
     int thread_num = config.getInt("threading.worker_threads", 10);            // 工作线程数

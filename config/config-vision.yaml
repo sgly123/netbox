@@ -1,0 +1,42 @@
+application:
+  type: "vision_server"
+
+network:
+  ip: "0.0.0.0"
+  port: 5040
+  io_type: "epoll"  # select, poll, epoll
+  thread_pool: 0
+
+vision:
+  server:
+    ip: "0.0.0.0"
+    port: 5040
+    io_type: "epoll"
+  
+  source:
+    type: "test"      # camera, rtsp, file, image_dir, test (generates test pattern)
+    path: "0"         # Camera ID/RTSP URL/File path
+    width: 640
+    height: 480
+    fps: 30
+  
+  detection:
+    algorithm: "motion"      # motion, contour, template, color
+    threshold: 0.3           # Detection threshold (0-1)
+    min_area: 500           # Minimum contour area (pixels)
+  
+  mqtt:
+    broker: "tcp://localhost:1883"     # 本地MQTT broker（如果没有可以禁用MQTT功能）
+    client_id: "vision_server"
+    topic_prefix: "vision/events"
+    qos: 1
+  
+  recording:
+    enabled: false           # Enable auto recording
+    duration: 60            # Recording duration (seconds)
+  
+  snapshot:
+    enabled: true           # Enable event snapshot
+  
+  output:
+    directory: "./output/vision"

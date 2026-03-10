@@ -28,7 +28,7 @@ size_t ProtocolRouter::onDataReceived(int client_fd, const char* data, size_t le
     magic_recv = ntohl(magic_recv);  // 网络字节序转主机字节序
     
     if (magic_recv == HEARTBEAT_MAGIC) {
-        Logger::debug("协议路由器识别到心跳包，已过滤");
+        // Logger::debug("协议路由器识别到心跳包，已过滤");
         return sizeof(uint32_t);  // 返回处理的心跳包长度，不再向下传递
     }
 }

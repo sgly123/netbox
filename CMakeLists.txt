@@ -74,12 +74,38 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/NetFramework/include
     ${CMAKE_SOURCE_DIR}/Protocol/include
     ${CMAKE_SOURCE_DIR}/app/include
+    ${CMAKE_SOURCE_DIR}/plugins/iot
+    ${CMAKE_SOURCE_DIR}/plugins/vision
 )
 
 # 查找依赖库
 find_package(Threads REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(CURL REQUIRED)
+
+# MQTT支持（可选）
+option(ENABLE_IOT_GATEWAY "Enable IoT Gateway with MQTT support" OFF)
+if(ENABLE_IOT_GATEWAY)
+    find_package(PahoMqttCpp REQUIRED)
+    message(STATUS "Found Paho MQTT C++ library - IoT Gateway enabled")
+    add_definitions(-DENABLE_IOT_GATEWAY)
+    find_package(nlohmann_json QUIET)
+    if(NOT nlohmann_json_FOUND)
+        include_directories(${CMAKE_SOURCE_DIR}/third_party)
+    endif()
+endif()
+
+# Vision Server支持（可选）
+option(ENABLE_VISION_SERVER "Enable Vision Server with OpenCV support" OFF)
+if(ENABLE_VISION_SERVER)
+    find_package(OpenCV REQUIRED)
+    find_package(PahoMqttCpp REQUIRED)
+    find_package(jsoncpp REQUIRED)
+    message(STATUS "Found OpenCV ${OpenCV_VERSION} - Vision Server enabled")
+    add_definitions(-DENABLE_VISION_SERVER)
+    include_directories(${OpenCV_INCLUDE_DIRS})
+endif()
 
 # 主程序可执行文件
 add_executable(NetBox
@@ -121,6 +147,9 @@ add_executable(NetBox
     app/src/DirectRedisServer.cpp
     app/src/UdpEchoServer.cpp
     app/src/WebSocketServer.cpp
+    app/src/IMServer.cpp
+    app/src/ECGDeviceServer.cpp
+    app/src/AIAssistant.cpp
     # 插件化框架
     NetFramework/src/app/ApplicationRegistry.cpp
     # 应用插件
@@ -129,6 +158,17 @@ add_executable(NetBox
     plugins/redis/DirectRedisPlugin.cpp
     plugins/udp/UdpEchoPlugin.cpp
     plugins/websocket/WebSocketPlugin.cpp
+    plugins/im/IMServerPlugin.cpp
+    plugins/medical/ECGDevicePlugin.cpp
+    # IoT网关插件（需要MQTT库）
+    $<$<BOOL:${ENABLE_IOT_GATEWAY}>:plugins/iot/IoTGatewayPlugin.cpp>
+    $<$<BOOL:${ENABLE_IOT_GATEWAY}>:plugins/iot/IoTGatewayServer.cpp>
+    # Vision视觉检测插件（需要OpenCV和MQTT库）
+    $<$<BOOL:${ENABLE_VISION_SERVER}>:plugins/vision/VisionServerPlugin.cpp>
+    $<$<BOOL:${ENABLE_VISION_SERVER}>:plugins/vision/VisionServer.cpp>
+    # 协议
+    Protocol/src/IMProtocol.cpp
+    Protocol/src/MedicalProtocol.cpp
 )
 
 # 链接库 - 跨平台支持
@@ -138,8 +178,19 @@ target_link_libraries(NetBox PRIVATE
     fmt::fmt
     OpenSSL::SSL
     OpenSSL::Crypto
-    ${PLATFORM_LIBS}  # 平台特定库
+    CURL::libcurl
+    ${PLATFORM_LIBS}
+    $<$<BOOL:${ENABLE_IOT_GATEWAY}>:PahoMqttCpp::paho-mqttpp3>
 )
+
+# Vision Server specific libraries
+if(ENABLE_VISION_SERVER)
+    target_link_libraries(NetBox PRIVATE
+        ${OpenCV_LIBS}
+        PahoMqttCpp::paho-mqttpp3
+        jsoncpp_lib
+    )
+endif()
 
 # 协议测试程序 (已删除，因为缺少main函数)
 # add_executable(protocol_test
