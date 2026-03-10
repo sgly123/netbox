@@ -181,7 +181,7 @@ void TcpServer::handleAccept() {
         
         char ip[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &client_addr.sin_addr, ip, sizeof(ip));
-        Logger::info(std::string("[TcpServer] 客户端") + std::to_string(client_fd) + "连接成功（IP:" + ip + "）");
+        // 连接成功（生产环境不打印，避免高频日志）
     }
 }
 
@@ -191,7 +191,6 @@ void TcpServer::sendHeartbeat(int client_fd) {
 
     uint32_t magic = htonl(HEARTBEAT_MAGIC);
     sendData(client_fd, (char*)&magic, sizeof(magic), true);
-    // Logger::debug("[TcpServer] 客户端" + std::to_string(client_fd) + "心跳包加入发送队列");
 }
 
 // 业务数据发送接口（供外部调用）
@@ -248,7 +247,6 @@ void TcpServer::handleRead(int client_fd) {
         if (magic_recv == HEARTBEAT_MAGIC) {
             // 识别到心跳包，跳过4字节
             processed += sizeof(uint32_t);
-            // Logger::debug("[TcpServer] 客户端" + std::to_string(client_fd) + "过滤心跳包，累计处理: " + std::to_string(processed) + "字节");
         } else {
             // 非心跳包，退出循环
             break;
@@ -281,7 +279,7 @@ void TcpServer::handleClose(int client_fd) {
     m_clients.erase(client_fd);
     m_lastActive.erase(client_fd);
     if (m_onClose) m_onClose(client_fd);
-    Logger::info("[TcpServer] 客户端" + std::to_string(client_fd) + "断开连接");
+    // 客户端断开（生产环境不打印）
 }
 
 void TcpServer::onDataReceived(int, const char*, size_t) {

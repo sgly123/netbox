@@ -9,10 +9,10 @@ bool EnhancedConfigReader::load(const std::string& filename) {
     clear();
     
     if (isYamlFile(filename)) {
-        Logger::info("检测到YAML格式配置文件: " + filename);
+    // 检测配置文件格式（生产环境不打印）
         return loadYamlFormat(filename);
     } else {
-        Logger::info("检测到传统格式配置文件: " + filename);
+    // 检测配置文件格式（生产环境不打印）
         return loadTraditionalFormat(filename);
     }
 }
@@ -54,7 +54,7 @@ bool EnhancedConfigReader::loadTraditionalFormat(const std::string& filename) {
         m_config[key] = value;
     }
     
-    Logger::info("成功加载配置文件: " + filename + ", 共" + std::to_string(m_config.size()) + "个配置项");
+    // 配置加载成功（生产环境不打印）
     return true;
 }
 
@@ -77,7 +77,7 @@ bool EnhancedConfigReader::loadYamlFormat(const std::string& filename) {
         }
     }
     
-    Logger::info("成功加载YAML配置文件: " + filename + ", 共" + std::to_string(m_config.size()) + "个配置项");
+    // YAML配置加载成功（生产环境不打印）
     return true;
 }
 

@@ -8,7 +8,7 @@ application:
 # 网络配置
 network:
   ip: 0.0.0.0             # 监听所有网络接口
-  port: 6379              # Redis服务端口
+  port: 6380              # Redis服务端口（避免与系统Redis冲突）
   io_type: epoll          # IO多路复用类型
 
 # 线程配置

@@ -35,7 +35,7 @@ size_t PureRedisProtocol::onDataReceived(const char* data, size_t len) {
 
 // 简化数据接收处理逻辑，移除魔数过滤
 size_t PureRedisProtocol::onClientDataReceived(int clientFd, const char* data, size_t len) {
-    Logger::debug("PureRedisProtocol 接收客户端[" + std::to_string(clientFd) + "]数据，长度: " + std::to_string(len));
+    // 接收数据（生产环境不打印）
     
     // 1. 添加数据到缓冲区
     std::string& buffer = m_clientBuffers[clientFd];
@@ -50,7 +50,7 @@ size_t PureRedisProtocol::onClientDataReceived(int clientFd, const char* data, s
     // 更新缓冲区为清理后的数据
     if (cleanBuffer.size() != buffer.size()) {
         buffer = cleanBuffer;
-        Logger::info("客户端[" + std::to_string(clientFd) + "]数据处理完成，剩余长度: " + std::to_string(buffer.size()));
+    // 数据处理完成（生产环境不打印）
     }
     
     // 3. RESP协议解析（用清理后的数据）
@@ -61,7 +61,7 @@ size_t PureRedisProtocol::onClientDataReceived(int clientFd, const char* data, s
         if (!success) break;
         
         if (!args.empty()) {
-            Logger::info("Pure Redis处理命令: " + args[0]);
+            // 处理命令（生产环境不打印）
             std::string response = executeRedisCommand(args);
             sendDirectResponse(clientFd, response);
         }
@@ -116,7 +116,7 @@ void PureRedisProtocol::processRedisCommand(int clientFd, const std::vector<std:
 
 std::string PureRedisProtocol::executeRedisCommand(const std::vector<std::string>& args) {
     std::string cmd = args[0];
-    Logger::info("executeRedisCommand 首参数: '" + args[0] + "'");
+    // 执行命令（生产环境不打印）
     std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::toupper);
 
 
@@ -191,12 +191,12 @@ void PureRedisProtocol::sendDirectResponse(int clientFd, const std::string& resp
         // 使用非阻塞发送，避免阻塞
         ssize_t sent = ::send(clientFd, response.c_str(), response.length(), MSG_DONTWAIT);
         if (sent > 0) {
-            Logger::info("PureRedisProtocol 发送成功，长度: " + std::to_string(sent));
+            // 发送成功（生产环境不打印）
         } else if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
             // 缓冲区满，尝试阻塞发送
             sent = ::send(clientFd, response.c_str(), response.length(), 0);
             if (sent > 0) {
-                Logger::info("PureRedisProtocol 阻塞发送成功，长度: " + std::to_string(sent));
+                // 阻塞发送成功（生产环境不打印）
             } else {
                 Logger::error("PureRedisProtocol 发送失败，错误码: " + std::to_string(errno));
             }
@@ -229,7 +229,7 @@ std::string PureRedisProtocol::filterHeartbeat(const std::string& data) {
     }
     
     if (totalRemoved > 0) {
-        Logger::info("过滤心跳包完成，移除了 " + std::to_string(totalRemoved) + " 字节，剩余长度: " + std::to_string(filtered.size()));
+    // 过滤心跳包完成（生产环境不打印）
     }
     
     return filtered;
@@ -289,8 +289,7 @@ std::string PureRedisProtocol::filterNullBytes(const std::string& data) {
     
     // 日志记录：显示过滤效果
     if (filtered.size() != data.size()) {
-        Logger::info("过滤空字节完成，原始长度: " + std::to_string(data.size()) + 
-                    ", 过滤后长度: " + std::to_string(filtered.size()));
+        // 过滤空字节完成（生产环境不打印）
     }
     return filtered;
 }

@@ -20,7 +20,7 @@ bool ApplicationRegistry::registerApplication(const std::string& name, CreateFun
     
     // 注册应用
     m_creators[name] = creator;
-    Logger::info("应用注册成功: " + name);
+    // 应用注册成功（生产环境不打印）
     
     return true;
 }
@@ -38,11 +38,7 @@ std::unique_ptr<ApplicationServer> ApplicationRegistry::createApplication(
     if (it == m_creators.end()) {
         Logger::error("未找到应用类型: \"" + name + "\" (长度: " + std::to_string(name.length()) + ")");
         
-        // 调试：显示所有已注册的应用
-        Logger::info("已注册的应用列表:");
-        for (const auto& pair : m_creators) {
-            Logger::info("  - \"" + pair.first + "\" (长度: " + std::to_string(pair.first.length()) + ")");
-        }
+        // 调试：显示所有已注册的应用（仅在错误时打印）
         
         return nullptr;
     }
@@ -51,7 +47,7 @@ std::unique_ptr<ApplicationServer> ApplicationRegistry::createApplication(
         // 调用创建函数，传入配置参数
         auto app = it->second(ip, port, io_type, pool, config);
         if (app) {
-            Logger::info("应用创建成功: " + name + " (" + ip + ":" + std::to_string(port) + ")");
+            // 应用创建成功（生产环境不打印）
         } else {
             Logger::error("应用创建失败: " + name);
         }

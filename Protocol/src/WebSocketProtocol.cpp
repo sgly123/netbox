@@ -206,7 +206,8 @@ bool WebSocketProtocol::parseFrame(const char* data, size_t length, size_t& byte
     }
 
 uint8_t byte1 = static_cast<uint8_t>(data[0]);
-uint8_t byte2 = static_cast<uint8_t>(data[1]);
+// byte2 用于后续检查
+// uint8_t byte2 = static_cast<uint8_t>(data[1]);
 
 // 检查 FIN 位和 RSV 位是否合理
 if ((byte1 & 0x70) != 0) {

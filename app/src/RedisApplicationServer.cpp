@@ -24,14 +24,12 @@ void RedisApplicationServer::initializeProtocolRouter() {
     auto redisProto = std::make_shared<PureRedisProtocol>();
     Logger::info("PureRedisProtocol对象创建完成");
 
-/*
     // 设置PureRedisProtocol的回调，用于发送响应
     Logger::info("设置PureRedisProtocol回调函数");
     redisProto->setPacketCallback([this](const std::vector<char>& packet) {
         Logger::info("PureRedisProtocol回调被调用，响应长度: " + std::to_string(packet.size()));
         this->onPureRedisResponse(packet);
     });
-*/
     // 协议层错误回调
     redisProto->setErrorCallback([](const std::string& error) {
         Logger::error("Pure Redis协议错误: " + error);

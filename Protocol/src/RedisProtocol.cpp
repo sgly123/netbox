@@ -27,7 +27,7 @@ size_t RedisProtocol::onDataReceived(const char* data, size_t len) {
 }
 
 size_t RedisProtocol::onClientDataReceived(int clientFd, const char* data, size_t len) {
-    Logger::info("RedisProtocol收到客户端" + std::to_string(clientFd) + "的数据，长度: " + std::to_string(len));
+    // 收到数据（生产环境不打印，避免高频日志）
     
     // 调试：打印原始数据的十六进制
     // std::ostringstream hexStream;
@@ -76,7 +76,7 @@ size_t RedisProtocol::onClientDataReceived(int clientFd, const char* data, size_
             commandLine.pop_back();
         }
         
-        Logger::info("Redis处理命令: " + commandLine);
+        // 处理命令（生产环境不打印）
         processRedisCommand(clientFd, commandLine);
     }
     
@@ -117,14 +117,14 @@ void RedisProtocol::processRedisCommand(int clientFd, const std::string& command
         return;
     }
     
-    Logger::info("Redis解析出 " + std::to_string(args.size()) + " 个参数");
+    // 解析参数（生产环境不打印）
     // for (size_t i = 0; i < args.size(); ++i) {
     //     Logger::debug("Redis参数[" + std::to_string(i) + "]: '" + args[i] + "'");
     // }
     
     // 直接在协议层处理Redis命令，不依赖应用层回调
     std::string response = executeRedisCommand(args);
-    Logger::info("RedisProtocol直接执行命令，响应: " + response.substr(0, 20) + "...");
+    // 执行命令（生产环境不打印）
 
     // 直接发送响应到客户端
     sendDirectResponse(clientFd, response);
@@ -197,7 +197,7 @@ std::string RedisProtocol::executeRedisCommand(const std::vector<std::string>& a
     std::string cmd = args[0];
     std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::toupper);
 
-    Logger::info("RedisProtocol执行命令: " + cmd);
+    // 执行命令（生产环境不打印）
 
     // 简单的命令处理
     if (cmd == "PING") {
@@ -214,7 +214,7 @@ std::string RedisProtocol::executeRedisCommand(const std::vector<std::string>& a
 }
 
 void RedisProtocol::sendDirectResponse(int clientFd, const std::string& response) {
-    Logger::info("RedisProtocol直接发送响应到客户端" + std::to_string(clientFd));
+    // 发送响应（生产环境不打印）
 
     // 这里需要获取socket并直接发送
     // 由于我们在协议层，没有直接的socket访问，所以先记录日志

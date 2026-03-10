@@ -54,7 +54,7 @@ RUN cd build && \
     cmake .. \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_CXX_FLAGS="-O3 -DNDEBUG" \
-        -DENABLE_IOT_GATEWAY=ON \
+        -DENABLE_IOT_GATEWAY=OFF \
     && make -j$(nproc)
 
 # 第二阶段：运行阶段
