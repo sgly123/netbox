@@ -28,6 +28,8 @@ jobs:
           libspdlog-dev \
           libfmt-dev \
           libyaml-cpp-dev \
+          libcurl4-openssl-dev \
+          libssl-dev \
           valgrind
     
     - name: Setup compiler
@@ -104,6 +106,8 @@ jobs:
         libspdlog-dev \
         libfmt-dev \
         libyaml-cpp-dev \
+        libcurl4-openssl-dev \
+        libssl-dev \
         lcov \
         gcovr
 

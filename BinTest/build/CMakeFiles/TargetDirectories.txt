@@ -1,6 +1,0 @@
-/home/sgly/桌面/NetBox/BinTest/build/CMakeFiles/BinTest.dir
-/home/sgly/桌面/NetBox/BinTest/build/CMakeFiles/BinTest_test.dir
-/home/sgly/桌面/NetBox/BinTest/build/CMakeFiles/BinTest_example.dir
-/home/sgly/桌面/NetBox/BinTest/build/CMakeFiles/test.dir
-/home/sgly/桌面/NetBox/BinTest/build/CMakeFiles/edit_cache.dir
-/home/sgly/桌面/NetBox/BinTest/build/CMakeFiles/rebuild_cache.dir

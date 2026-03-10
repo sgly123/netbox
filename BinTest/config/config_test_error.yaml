@@ -1,7 +1,0 @@
-# 测试错误处理 - 不存在的应用类型
-application:
-  type: nonexistent_app
-
-network:
-  ip: 127.0.0.1
-  port: 8888

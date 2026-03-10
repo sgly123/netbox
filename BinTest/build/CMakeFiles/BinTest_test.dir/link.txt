@@ -1,1 +1,0 @@
-/usr/bin/c++ -g -Xlinker --dependency-file=CMakeFiles/BinTest_test.dir/link.d CMakeFiles/BinTest_test.dir/tests/simple_test.cpp.o -o BinTest_test
