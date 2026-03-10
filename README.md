@@ -73,7 +73,7 @@ cmake -B build && cmake --build build --config Release
 
 ```bash
 # 克隆项目
-git clone https://github.com/netbox/netbox.git
+git clone https://github.com/sgly123/netbox.git
 cd NetBox
 docker-compose up --build
 ```
