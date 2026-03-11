@@ -52,6 +52,9 @@ protected:
     virtual void onClientConnected(int clientFd) override;
     virtual void onClientDisconnected(int clientFd) override;
 
+    // 数据处理（在线程池中执行）
+    void processData(int clientFd, const char* data, size_t len);
+
     // 协议回调
     virtual void onProtocolPacket(uint32_t protoId, const std::vector<char>& packet);
     virtual void onProtocolPacketForClient(int clientFd, uint32_t protoId, const std::vector<char>& packet);

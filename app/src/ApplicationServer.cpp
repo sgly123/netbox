@@ -48,6 +48,21 @@ void ApplicationServer::stop() {
 void ApplicationServer::onDataReceived(int clientFd, const char* data, size_t len) {
     Logger::info("ApplicationServer收到客户端" + std::to_string(clientFd) + "的数据，长度: " + std::to_string(len));
 
+    // 复制数据到堆上，避免栈上数据被释放
+    std::vector<char> buffer(data, data + len);
+
+    // 如果有线程池，提交到线程池处理
+    if (m_pool) {
+        m_pool->enqueue([this, clientFd, buffer]() {
+            this->processData(clientFd, buffer.data(), buffer.size());
+        });
+    } else {
+        // 没有线程池，直接在Reactor线程处理
+        processData(clientFd, data, len);
+    }
+}
+
+void ApplicationServer::processData(int clientFd, const char* data, size_t len) {
     m_currentClientFd = clientFd;
 
     std::ostringstream hexStream;
